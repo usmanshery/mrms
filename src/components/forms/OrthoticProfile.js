@@ -3,6 +3,8 @@ import { connect } from "react-redux";
 import { onVerifyPatientInfo, registerPatient } from "../../store/session";
 
 import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { Autocomplete } from '@material-ui/lab';
+
 import { Container, Row, Col } from "react-bootstrap";
 
 import "./FormStyles.css";
@@ -25,49 +27,51 @@ const mapDispatchToProps = (dispatch) => {
 
 */
 
-class PatientForm extends Component {
+class OrthoticForm extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
 			form: {
 				// Row
-				name: "",
-				fathername: "",
-				// Row
-				sex: "",
-				age: "",
-				phone: "",
-				// Row
-				rank: "",
-				armynumber: "",
-				unit: "",
-				// Row
-				address: "",
-				city: "",
+				side: "",
+				deformityLevel: "",
+				cause: "",
+				trauma: "",
+				disease: "",
+				deformity_disability: "",
+				disabilityDetail: "",
+				treatmentObjectives: "",
+				applianceType: ""
 			},
 			// errors to show against validation
 			errors: {
-				name: false,
-				fathername: false,
-				contact: false,
-				sex: false,
-				age: false,
-				phone: false,
-				address: false,
-				city: false,
+				side: false,
+				deformityLevel: false,
+				cause: false,
+				trauma: false,
+				disease: false,
+				deformity_disability: false,
+				disabilityDetail: false,
+				treatmentObjectives: false,
+				applianceType: false
 			},
+			profile: props.profile
 		};
 
 		// labels for inputs
 		this.labels = {
-			name: "Patient's Name",
-			fathername: "Father's Name",
-			sex: "Gender",
-			age: "Age",
-			phone: "Contact Number",
-			address: "Address",
-			city: "Select City",
+			side: "Side",
+			sideOptions: ["Bilateral", "Unilateral", "Left", "Right"],
+			deformityLevel: "Level of Deformity",
+			deformityLevelOptions: ["Hip", "Knee", "Ankle", "Foot"],
+			cause: "Cause",
+			trauma: "Trauma",
+			disease: "Disease",
+			deformity_disability: "Deformity/ Disability",
+			disabilityDetail: "Detail of Disability",
+			treatmentObjectives: "Treatment Objectives",
+			applianceType: "Type of Appliance"
 		};
 
 		// validation functions
@@ -141,62 +145,39 @@ class PatientForm extends Component {
 				{/* Name, Father's Name, Gender, Age */}
 				<Row>
 					<Col className="col-4">
-						<TextField
-							className={"fullWidth"}
-							label={this.labels.name}
-							value={this.state.form.name}
-							onChange={(event) => this.setFormValue("name", event.target.value)}
-							error={this.state.errors.name !== false}
-							helperText={this.state.errors.name}
-							required
-							variant="standard"
-						/>
-					</Col>
-					<Col className="col-4">
-						<TextField
-							className={"fullWidth"}
-							label={this.labels.fathername}
-							value={this.state.form.fathername}
-							onChange={(event) => this.setFormValue("fathername", event.target.value)}
-							error={this.state.errors.fathername !== false}
-							helperText={this.state.errors.fathername}
-							required
-							variant="standard"
-						/>
-					</Col>
-					<Col className="col-2">
 						<FormControl
-							error={this.state.errors.sex !== false}
+							error={this.state.errors.side !== false}
 							variant="standard"
 							className="fullWidth"
 						>
-							<InputLabel>{this.labels.sex}</InputLabel>
+							<InputLabel>{this.labels.side}</InputLabel>
 							<Select
 								className="fullWidth"
-								value={this.state.form.sex}
-								onChange={(event) => this.setFormValue("sex", event.target.value)}
+								value={this.state.form.side}
+								onChange={(event) => this.setFormValue("side", event.target.value)}
 								required
 							>
-								<MenuItem value="">
-									<em>None</em>
-								</MenuItem>
-								<MenuItem value={"Male"}>Male</MenuItem>
-								<MenuItem value={"Female"}>Female</MenuItem>
+								{[<MenuItem value=""><em>Select</em></MenuItem>].concat(this.labels.sideOptions.map((value) => <MenuItem value={value}>{value}</MenuItem>))}
 							</Select>
-							<FormHelperText>{this.state.errors.sex}</FormHelperText>
+							<FormHelperText>{this.state.errors.side}</FormHelperText>
 						</FormControl>
 					</Col>
-					<Col className="col-2">
-						<TextField
-							className={"fullWidth"}
-							label={this.labels.age}
-							value={this.state.form.age}
-							onChange={(event) => this.setFormValue("age", event.target.value)}
-							error={this.state.errors.age !== false}
-							helperText={this.state.errors.age}
-							required
-							variant="standard"
-							type="number"
+					<Col className="col-4">
+						<Autocomplete
+							freeSolo
+							options={this.labels.deformityLevelOptions}
+							renderInput={(params) => (
+								<TextField {...params} label={this.labels.deformityLevel} variant="standard" />
+							)}
+						/>
+					</Col>
+					<Col className="col-4">
+						<Autocomplete
+							freeSolo
+							options={this.labels.deformityLevelOptions}
+							renderInput={(params) => (
+								<TextField {...params} label={this.labels.deformityLevel} variant="standard" />
+							)}
 						/>
 					</Col>
 				</Row>
@@ -263,12 +244,15 @@ class PatientForm extends Component {
 			</Container>
 			/*
 				Fields:
-					name
-					father name
-					contact
-					age
-					sex
-					address (by parts, address, city (concatinated with province))
+					side
+					deformityLevel
+					cause
+					trauma
+					disease
+					deformity_disability
+					disabilityDetail
+					treatmentObjectives
+					applianceType
 				
 				Setup other needed fields:
 					
@@ -277,4 +261,4 @@ class PatientForm extends Component {
 	}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(PatientForm);
+export default connect(mapStateToProps, mapDispatchToProps)(OrthoticForm);

@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import PatientForm from "./forms/PatientProfile";
+// import PatientForm from "./forms/PatientProfile";
+import OrthoticForm from "./forms/OrthoticProfile";
+
 
 const mapStateToProps = (state) => {
 	return {};
@@ -31,7 +33,8 @@ class MainComponent extends Component {
 		return (
 			<div>
 				<p>Main Component</p>
-				<PatientForm />
+				{/* <PatientForm/> */}
+				<OrthoticForm/>
 			</div>
 		);
 	}
