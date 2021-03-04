@@ -1,11 +1,16 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-// import PatientForm from "./forms/PatientProfile";
-import OrthoticForm from "./forms/OrthoticProfile";
 
+import PatientComponent from "./PatientComponent";
+
+import { navModules, patientPages } from "../store/session";
+import "./styles/MainComponent.css";
 
 const mapStateToProps = (state) => {
-	return {};
+	return {
+		activeModule: state.activeModule,
+		activePatientPage: state.patientModule.activePage,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
@@ -25,18 +30,29 @@ const mapDispatchToProps = (dispatch) => {
 */
 
 class MainComponent extends Component {
-	// constructor(props) {
-	// 	super(props);
-	// }
+	constructor(props) {
+		super(props);
 
-	render() {
+		this.homeModule = this.homeModule.bind(this);
+	}
+
+	// home module
+	homeModule() {
 		return (
 			<div>
-				<p>Main Component</p>
-				{/* <PatientForm/> */}
-				<OrthoticForm/>
+				<h1>Home :)</h1>
 			</div>
 		);
+	}
+
+	render() {
+		console.log("render main");
+		// patient module
+		if (this.props.activeModule === navModules.patient) return <PatientComponent />;
+
+		// home module (default)
+		console.log("goign default");
+		return this.homeModule();
 	}
 }
 

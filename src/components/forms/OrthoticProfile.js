@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { onVerifyPatientInfo, registerPatient } from "../../store/session";
 
 import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button } from "@material-ui/core";
-import { Autocomplete } from '@material-ui/lab';
+import { Autocomplete } from "@material-ui/lab";
 
 import { Container, Row, Col } from "react-bootstrap";
 
@@ -16,7 +16,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
 	return {
 		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientProfile: (profile) => dispatch(registerPatient(profile))
+		registerPatientProfile: (profile) => dispatch(registerPatient(profile)),
 	};
 };
 
@@ -34,15 +34,15 @@ class OrthoticForm extends Component {
 		this.state = {
 			form: {
 				// Row
-				side: "",
-				deformityLevel: "",
-				cause: "",
-				trauma: "",
-				disease: "",
+				side: [],
+				deformityLevel: [],
+				cause: [],
+				trauma: [],
+				disease: [],
 				deformity_disability: "",
 				disabilityDetail: "",
-				treatmentObjectives: "",
-				applianceType: ""
+				treatmentObjectives: [],
+				applianceType: [],
 			},
 			// errors to show against validation
 			errors: {
@@ -54,24 +54,41 @@ class OrthoticForm extends Component {
 				deformity_disability: false,
 				disabilityDetail: false,
 				treatmentObjectives: false,
-				applianceType: false
+				applianceType: false,
 			},
-			profile: props.profile
+			profile: props.profile,
 		};
 
 		// labels for inputs
 		this.labels = {
 			side: "Side",
 			sideOptions: ["Bilateral", "Unilateral", "Left", "Right"],
+
+			// other
 			deformityLevel: "Level of Deformity",
 			deformityLevelOptions: ["Hip", "Knee", "Ankle", "Foot"],
+
 			cause: "Cause",
+			causeOptions: ["Trauma", "Disease", "Tumor", "Congenital"],
+
+			// other
 			trauma: "Trauma",
+			traumaOptions: ["Road Side Accident", "Mechanical Accident", "Gun Shot", "Fall", "Landmin", "Bomb Blast", "Burns"],
+
+			// other
 			disease: "Disease",
+			diseaseOptions: ["Diahetes", "Vascular Disease", "Osteomyleitis", "CP", "Polio", "Arthritis", "TB", "Paraplegia", "Hemiphegia", "Spina Bifiba"],
+
 			deformity_disability: "Deformity/ Disability",
 			disabilityDetail: "Detail of Disability",
+
+			// other
 			treatmentObjectives: "Treatment Objectives",
-			applianceType: "Type of Appliance"
+			treatmentObjectivesOptions: ["Prevent/Correct Deformity", "Improve Ambulation", "Reduce Axial Load", "Fracture Treatment", "Protect Joint"],
+
+			// other
+			applianceType: "Type of Appliance",
+			applianceTypeOptions: ["FO", "AFO", "KAFO", "HKAFO", "KO", "Hip O"],
 		};
 
 		// validation functions
@@ -83,44 +100,12 @@ class OrthoticForm extends Component {
 		};
 	}
 
-	// componentDidMount() {
-	// 	this.props.verifyPatientInfo("test contact number 123");
-	// }
-
 	setFormValue(ref, value) {
 		// validate for error
 		let error = false;
 
-		if (ref === "name") {
-			if (this.validation.isNull(value)) error = "Patient Name is Required";
-			if (this.validation.isOverSize(5)(value))
-				error = "Name Should Be Under 100 Characters";
-		}
-		if (ref === "fathername") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-			if (this.validation.isOverSize(5)(value))
-				error = "Name Should Be Under 100 Characters";
-		}
-		if (ref === "phone") {
-			if (this.validation.isNull(value))
-				error = "Patient's Contact Number is Required";
-		}
-		if (ref === "sex") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-		}
-		if (ref === "age") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-		}
-		if (ref === "address") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-		}
-		if (ref === "city") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-		}
-
-		console.log("reference:", ref);
-		console.log("value:", value);
-		console.log("Error:", error);
+		// if required, set following for error validation
+		// if (ref === "<title>") {}
 
 		this.setState({
 			form: {
@@ -134,110 +119,114 @@ class OrthoticForm extends Component {
 		});
 	}
 
-	// check for unique values and if correct, register the profile
-	register() {
-		this.props.registerPatientProfile({})
-	}
-
 	render() {
 		return (
 			<Container className="xgreenBackground">
 				{/* Name, Father's Name, Gender, Age */}
 				<Row>
-					<Col className="col-4">
-						<FormControl
-							error={this.state.errors.side !== false}
-							variant="standard"
-							className="fullWidth"
-						>
-							<InputLabel>{this.labels.side}</InputLabel>
-							<Select
-								className="fullWidth"
-								value={this.state.form.side}
-								onChange={(event) => this.setFormValue("side", event.target.value)}
-								required
-							>
-								{[<MenuItem value=""><em>Select</em></MenuItem>].concat(this.labels.sideOptions.map((value) => <MenuItem value={value}>{value}</MenuItem>))}
-							</Select>
+					{/* Side */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.side !== false} variant="standard" fullWidth>
+							<Autocomplete
+								multiple
+								onChange={(event, value) => this.setFormValue("side", value)}
+								options={this.labels.sideOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.side} variant="standard" />}
+							/>
 							<FormHelperText>{this.state.errors.side}</FormHelperText>
 						</FormControl>
 					</Col>
-					<Col className="col-4">
-						<Autocomplete
-							freeSolo
-							options={this.labels.deformityLevelOptions}
-							renderInput={(params) => (
-								<TextField {...params} label={this.labels.deformityLevel} variant="standard" />
-							)}
-						/>
-					</Col>
-					<Col className="col-4">
-						<Autocomplete
-							freeSolo
-							options={this.labels.deformityLevelOptions}
-							renderInput={(params) => (
-								<TextField {...params} label={this.labels.deformityLevel} variant="standard" />
-							)}
-						/>
-					</Col>
-				</Row>
-				{/* Address and City */}
-				<Row>
-					<Col>
-						<TextField
-							className={"fullWidth"}
-							label={this.labels.address}
-							value={this.state.form.address}
-							onChange={(event) => this.setFormValue("address", event.target.value)}
-							error={this.state.errors.address !== false}
-							helperText={this.state.errors.address}
-							required
-							variant="standard"
-						/>
-					</Col>
-				</Row>
-				{/* Contact Number so far and a lot of space */}
-				<Row>
-					<Col className="col-4">
-						<FormControl
-							error={this.state.errors.city !== false}
-							variant="standard"
-							className="fullWidth"
-						>
-							<InputLabel>{this.labels.city}</InputLabel>
-							<Select
-								className="fullWidth"
-								value={this.state.form.city}
-								onChange={(event) => this.setFormValue("city", event.target.value)}
-								required
-							>
-								<MenuItem value="">
-									<em>None</em>
-								</MenuItem>
-								<MenuItem value={"Lahore"}>Lahore</MenuItem>
-								<MenuItem value={"Rawalpindi"}>Rawalpindi</MenuItem>
-							</Select>
-							<FormHelperText>{this.state.errors.city}</FormHelperText>
+					{/* Deformity Level */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.deformityLevel !== false} variant="standard" fullWidth>
+							<Autocomplete
+								freeSolo
+								multiple
+								onChange={(event, value) => this.setFormValue("deformityLevel", value)}
+								options={this.labels.deformityLevelOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.deformityLevel} variant="standard" />}
+							/>
+							<FormHelperText>{this.state.errors.deformityLevel}</FormHelperText>
 						</FormControl>
 					</Col>
-					<Col className="col-2">
-						<TextField
-							className={"fullWidth"}
-							label={this.labels.phone}
-							value={this.state.form.phone}
-							onChange={(event) => this.setFormValue("phone", event.target.value)}
-							error={this.state.errors.phone !== false}
-							helperText={this.state.errors.phone}
-							required
-							variant="standard"
-							type="number"
-						/>
+				</Row>
+				<Row>
+					{/* Cause */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.cause !== false} variant="standard" fullWidth>
+							<Autocomplete
+								multiple
+								onChange={(event, value) => this.setFormValue("cause", value)}
+								options={this.labels.causeOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.cause} variant="standard" />}
+							/>
+							<FormHelperText>{this.state.errors.cause}</FormHelperText>
+						</FormControl>
 					</Col>
-					<Col className="col-3 offset-3">
+					{/* Trauma */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.trauma !== false} variant="standard" fullWidth>
+							<Autocomplete
+								freeSolo
+								multiple
+								onChange={(event, value) => this.setFormValue("trauma", value)}
+								options={this.labels.traumaOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.trauma} variant="standard" />}
+							/>
+							<FormHelperText>{this.state.errors.trauma}</FormHelperText>
+						</FormControl>
+					</Col>
+				</Row>
+				<Row>
+					{/* Disease */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.disease !== false} variant="standard" fullWidth>
+							<Autocomplete
+								freeSolo
+								multiple
+								onChange={(event, value) => this.setFormValue("disease", value)}
+								options={this.labels.diseaseOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.disease} variant="standard" />}
+							/>
+							<FormHelperText>{this.state.errors.disease}</FormHelperText>
+						</FormControl>
+					</Col>
+					{/* Deformity/ Disability */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.deformity_disability !== false} variant="standard" fullWidth>
+							<TextField
+								margin="none"
+								label={this.labels.deformity_disability}
+								value={this.state.form.deformity_disability}
+								onChange={(event) => this.setFormValue("deformity_disability", event.target.value)}
+								variant="standard"
+							/>
+							<FormHelperText>{this.state.errors.deformity_disability}</FormHelperText>
+						</FormControl>
+					</Col>
+				</Row>
+				<Row>
+					{/* Deformity/ Disability */}
+					<Col className="col-12">
+						<FormControl error={this.state.errors.disabilityDetail !== false} variant="standard" fullWidth>
+							<TextField
+								multiline
+								margin="none"
+								label={this.labels.disabilityDetail}
+								value={this.state.form.disabilityDetail}
+								onChange={(event) => this.setFormValue("disabilityDetail", event.target.value)}
+								variant="standard"
+							/>
+							<FormHelperText>{this.state.errors.disabilityDetail}</FormHelperText>
+						</FormControl>
+					</Col>
+				</Row>
+				<Row>
+					<Col className="col-3 offset-9">
 						<div className="form-submit-button">
 							<Button variant="contained" color="primary">
-								Register Patient
-						</Button>
+								Save Case
+							</Button>
 						</div>
 					</Col>
 				</Row>

@@ -1,7 +1,12 @@
 import React, { Component } from "react";
-import "./App.css";
-import MainComponent from "./components/MainComponent";
 import { connect } from "react-redux";
+
+import Navbar from "./components/navigation/Navbar";
+import Sidebar from "./components/navigation/Sidebar";
+
+import MainComponent from "./components/MainComponent";
+
+import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const mapStateToProps = (state) => {
@@ -15,10 +20,13 @@ const mapDispatchToProps = (dispatch) => {
 class App extends Component {
 	render() {
 		return (
-			<div className="App">
-				<p>App</p>
-				<MainComponent />
-			</div>
+			<>
+				<Navbar />
+				<Sidebar />
+				<div className="App">
+					<MainComponent />
+				</div>
+			</>
 		);
 	}
 }
