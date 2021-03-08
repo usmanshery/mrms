@@ -1,10 +1,9 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { changeActiveModule, navModules } from "../../store/session";
+import { changeActiveModule, navModules } from "../../store/actions/Navigation";
 
-import { AppBar, Toolbar, Typography, Button, IconButton } from "@material-ui/core";
-import MenuIcon from "@material-ui/icons/Menu";
+import { AppBar, Toolbar, Typography, Button } from "@material-ui/core";
 
 import "../styles/Navigation.css";
 
@@ -26,10 +25,10 @@ class Navbar extends Component {
 			<AppBar position="sticky" style={{ backgroundColor: "mediumspringgreen", color: "black" }}>
 				<Toolbar style={{ alignItems: "flex-end" }}>
 					<div>
-						<Typography variant="h4" style={{ fontWeight: "600" }}>
+						<Typography variant="h4" style={{ fontWeight: "600" }} className="noselect">
 							AFIRM
 						</Typography>
-						<Typography variant="h5" style={{ textDecoration: "overline" }}>
+						<Typography variant="h5" style={{ textDecoration: "overline" }} className="noselect">
 							Rehibilitation Process Management System
 						</Typography>
 					</div>

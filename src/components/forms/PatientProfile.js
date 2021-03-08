@@ -1,8 +1,10 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { onVerifyPatientInfo, registerPatient } from "../../store/session";
+import { registerPatientBackup } from "../../store/actions/Patient";
+import { onVerifyPatientInfo, cities, objFilter } from "../../store/session";
 
 import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { Autocomplete } from "@material-ui/lab";
 import { Container, Row, Col } from "react-bootstrap";
 
 import "./FormStyles.css";
@@ -14,7 +16,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
 	return {
 		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientProfile: (profile) => dispatch(registerPatient(profile))
+		registerPatientBackup: (backup) => dispatch(registerPatientBackup(backup)),
 	};
 };
 
@@ -32,19 +34,19 @@ class PatientForm extends Component {
 		this.state = {
 			form: {
 				// Row
-				name: "",
-				fathername: "",
+				name: this.props.loadData.name ? this.props.loadData.name : "",
+				fathername: this.props.loadData.fathername ? this.props.loadData.fathername : "",
 				// Row
-				sex: "",
-				age: "",
-				phone: "",
+				sex: this.props.loadData.sex ? this.props.loadData.sex : "",
+				age: this.props.loadData.age ? this.props.loadData.age : "",
+				phone: this.props.loadData.phone ? this.props.loadData.phone : "",
 				// Row
-				rank: "",
-				armynumber: "",
-				unit: "",
+				rank: this.props.loadData.rank ? this.props.loadData.rank : "",
+				armynumber: this.props.loadData.armynumber ? this.props.loadData.armynumber : "",
+				unit: this.props.loadData.unit ? this.props.loadData.unit : "",
 				// Row
-				address: "",
-				city: "",
+				address: this.props.loadData.address ? this.props.loadData.address : "",
+				city: this.props.loadData.city ? this.props.loadData.city : "",
 			},
 			// errors to show against validation
 			errors: {
@@ -68,20 +70,24 @@ class PatientForm extends Component {
 			phone: "Contact Number",
 			address: "Address",
 			city: "Select City",
+			cityOptions: cities,
 		};
 
 		// validation functions
 		this.validation = {
-			isNull: (value) => value === undefined || value.length === 0,
+			isNull: (value) => value === undefined || value === null || value.length === 0,
 			isUnderSize: (minLength) => (value = "") => value.length < minLength,
 			isOverSize: (maxLength) => (value = "") => value.length > maxLength,
 			isNotNumber: (value) => isNaN(value),
 		};
-	}
 
-	// componentDidMount() {
-	// 	this.props.verifyPatientInfo("test contact number 123");
-	// }
+		this.trigger =
+			this.props.triggerName && this.props.triggerCallback ? (
+				<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+					{this.props.triggerName}
+				</Button>
+			) : undefined;
+	}
 
 	setFormValue(ref, value) {
 		// validate for error
@@ -89,17 +95,16 @@ class PatientForm extends Component {
 
 		if (ref === "name") {
 			if (this.validation.isNull(value)) error = "Patient Name is Required";
-			if (this.validation.isOverSize(5)(value))
-				error = "Name Should Be Under 100 Characters";
+			if (this.validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
 		}
 		if (ref === "fathername") {
 			if (this.validation.isNull(value)) error = "This Field is Required";
-			if (this.validation.isOverSize(5)(value))
-				error = "Name Should Be Under 100 Characters";
+			if (this.validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
 		}
 		if (ref === "phone") {
-			if (this.validation.isNull(value))
-				error = "Patient's Contact Number is Required";
+			if (this.validation.isNull(value)) error = "Patient's Contact Number is Required";
+			if (this.validation.isUnderSize(11)(value) || this.validation.isOverSize(11)(value)) error = "Contact Number Format: 11 Digit | Example: 03219988777";
+			if (this.validation.isNotNumber(value)) return;
 		}
 		if (ref === "sex") {
 			if (this.validation.isNull(value)) error = "This Field is Required";
@@ -114,9 +119,9 @@ class PatientForm extends Component {
 			if (this.validation.isNull(value)) error = "This Field is Required";
 		}
 
-		console.log("reference:", ref);
-		console.log("value:", value);
-		console.log("Error:", error);
+		// console.log("reference:", ref);
+		// console.log("value:", value);
+		// console.log("Error:", error);
 
 		this.setState({
 			form: {
@@ -131,11 +136,48 @@ class PatientForm extends Component {
 	}
 
 	// check for unique values and if correct, register the profile
-	register() {
-		this.props.registerPatientProfile({})
+	triggerAction() {
+		// if any errors
+		Object.filter = objFilter;
+		if (Object.keys(Object.filter(this.state.errors, (key, value) => value !== false)).length > 0) {
+			console.log("Not so fast bitch");
+			return;
+		}
+		// if missing any required values
+		let requiredFields = ["name", "fathername", "contact", "sex", "age", "phone", "address", "city"];
+		let flaggedKeys = Object.keys(
+			Object.filter(this.state.form, (key, value) => requiredFields.includes(key) && (value === undefined || value === null || value === ""))
+		);
+		// highlite errors for these
+		if (flaggedKeys.length > 0) {
+			let updatedErrors = {};
+			flaggedKeys.forEach((key) => {
+				updatedErrors[key] = "This field is required";
+			});
+			this.setState({
+				errors: {
+					...this.state.errors,
+					...updatedErrors,
+				},
+			});
+			return;
+		}
+
+		this.props.triggerCallback(this.state.form);
+	}
+
+	// if page is being unloaded, save the state
+	componentWillUnmount() {
+		this.props.registerPatientBackup(this.state.form);
 	}
 
 	render() {
+		const triggerElement = this.trigger ? (
+			<Row>
+				<Col className="col-3 offset-9">{this.trigger}</Col>
+			</Row>
+		) : undefined;
+
 		return (
 			<Container className="xgreenBackground">
 				{/* Name, Father's Name, Gender, Age */}
@@ -165,18 +207,9 @@ class PatientForm extends Component {
 						/>
 					</Col>
 					<Col className="col-2">
-						<FormControl
-							error={this.state.errors.sex !== false}
-							variant="standard"
-							className="fullWidth"
-						>
+						<FormControl error={this.state.errors.sex !== false} variant="standard" className="fullWidth">
 							<InputLabel>{this.labels.sex}</InputLabel>
-							<Select
-								className="fullWidth"
-								value={this.state.form.sex}
-								onChange={(event) => this.setFormValue("sex", event.target.value)}
-								required
-							>
+							<Select className="fullWidth" value={this.state.form.sex} onChange={(event) => this.setFormValue("sex", event.target.value)} required>
 								<MenuItem value="">
 									<em>None</em>
 								</MenuItem>
@@ -200,7 +233,7 @@ class PatientForm extends Component {
 						/>
 					</Col>
 				</Row>
-				{/* Address and City */}
+				{/* Address */}
 				<Row>
 					<Col>
 						<TextField
@@ -215,31 +248,21 @@ class PatientForm extends Component {
 						/>
 					</Col>
 				</Row>
-				{/* Contact Number so far and a lot of space */}
+				{/* City, Contact Number so far and a lot of space */}
 				<Row>
 					<Col className="col-4">
-						<FormControl
-							error={this.state.errors.city !== false}
-							variant="standard"
-							className="fullWidth"
-						>
-							<InputLabel>{this.labels.city}</InputLabel>
-							<Select
-								className="fullWidth"
-								value={this.state.form.city}
-								onChange={(event) => this.setFormValue("city", event.target.value)}
-								required
-							>
-								<MenuItem value="">
-									<em>None</em>
-								</MenuItem>
-								<MenuItem value={"Lahore"}>Lahore</MenuItem>
-								<MenuItem value={"Rawalpindi"}>Rawalpindi</MenuItem>
-							</Select>
+						<FormControl error={this.state.errors.city !== false} variant="standard" fullWidth>
+							<Autocomplete
+								freeSolo
+								inputValue={this.state.form.city}
+								onChange={(event, value) => this.setFormValue("city", value)}
+								options={this.labels.cityOptions}
+								renderInput={(params) => <TextField required error={this.state.errors.city ? true : false} {...params} label={this.labels.city} variant="standard" />}
+							/>
 							<FormHelperText>{this.state.errors.city}</FormHelperText>
 						</FormControl>
 					</Col>
-					<Col className="col-2">
+					<Col className="col-3">
 						<TextField
 							className={"fullWidth"}
 							label={this.labels.phone}
@@ -249,17 +272,10 @@ class PatientForm extends Component {
 							helperText={this.state.errors.phone}
 							required
 							variant="standard"
-							type="number"
 						/>
 					</Col>
-					<Col className="col-3 offset-3">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary">
-								Register Patient
-						</Button>
-						</div>
-					</Col>
 				</Row>
+				{triggerElement}
 			</Container>
 			/*
 				Fields:

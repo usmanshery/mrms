@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 
 import PatientComponent from "./PatientComponent";
 
-import { navModules, patientPages } from "../store/session";
+import { navModules } from "../store/actions/Navigation";
 import "./styles/MainComponent.css";
 
 const mapStateToProps = (state) => {
@@ -46,12 +46,10 @@ class MainComponent extends Component {
 	}
 
 	render() {
-		console.log("render main");
 		// patient module
 		if (this.props.activeModule === navModules.patient) return <PatientComponent />;
 
 		// home module (default)
-		console.log("goign default");
 		return this.homeModule();
 	}
 }

@@ -1,4 +1,7 @@
 .rootDiv {
-	padding-top: 10px;
-	padding-left: 10px;
+	padding: 10px;
+}
+
+.formTopline {
+	border-top: 1px solid rgb(220, 220, 220);
 }

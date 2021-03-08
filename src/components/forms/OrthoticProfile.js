@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { connect } from "react-redux";
 import { onVerifyPatientInfo, registerPatient } from "../../store/session";
 
-import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
 
 import { Container, Row, Col } from "react-bootstrap";
