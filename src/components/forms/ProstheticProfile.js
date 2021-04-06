@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { onVerifyPatientInfo, registerPatient } from "../../store/session";
+import { objFilter } from "../../store/misc/global";
+import { insertCaseAction, updateCaseAction } from "../../store/actions/Patient";
 
 import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
@@ -10,13 +11,18 @@ import { Container, Row, Col } from "react-bootstrap";
 import "./FormStyles.css";
 
 const mapStateToProps = (state) => {
-	return {};
+	return {
+		activePatientId: state.patientModule.activePatientId,
+		activePatientCaseId: state.patientModule.activePatientCaseId,
+		activePatientData: state.patientModule.activePatientData,
+		activePatientEditable: state.patientModule.activePatientEditable,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
-		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientProfile: (profile) => dispatch(registerPatient(profile)),
+		insertCase: (patientId, caseDetails) => dispatch(insertCaseAction(patientId, "prosthetic", caseDetails)),
+		updateCase: (caseId, caseDetails) => dispatch(updateCaseAction(caseId, "prosthetic", caseDetails)),
 	};
 };
 
@@ -24,25 +30,36 @@ class ProstheticForm extends Component {
 	constructor(props) {
 		super(props);
 
+		// if active case exists, fetch its data
+		let activeCaseData = this.props.activePatientData.cases.filter((_case) => _case.orthotic._id === this.props.activePatientCaseId);
+		if (activeCaseData.length === 0) {
+			activeCaseData = undefined;
+		}
+
+		if (activeCaseData !== undefined) {
+			activeCaseData = activeCaseData[0].orthotic;
+		}
+
 		this.state = {
 			form: {
-				onsetDate: undefined,
-				onsetPlace: "",
-				area: "",
-				cause: "",
-				diagnosis_disability: "",
-				disabilityDetail: "",
-				amputationLevel: "",
-				amputationType: "",
-				side: [],
-				prescription: "",
-				componentsDetail: "",
-				socketType: "",
-				footType: "",
-				linnerType: "",
-				kneeJointType: "",
-				modilityGrade: "",
-				kClassification: ""
+				// Row
+				onsetDate: this.props.isNew ? undefined : activeCaseData.onsetDate,
+				onsetPlace: this.props.isNew ? "" : activeCaseData.onsetPlace,
+				area: this.props.isNew ? "" : activeCaseData.area,
+				cause: this.props.isNew ? "" : activeCaseData.cause,
+				diagnosis_disability: this.props.isNew ? "" : activeCaseData.diagnosis_disability,
+				disabilityDetail: this.props.isNew ? "" : activeCaseData.disabilityDetail,
+				amputationLevel: this.props.isNew ? "" : activeCaseData.amputationLevel,
+				amputationType: this.props.isNew ? "" : activeCaseData.amputationType,
+				side: this.props.isNew ? [] : activeCaseData.side,
+				prescription: this.props.isNew ? "" : activeCaseData.prescription,
+				componentsDetail: this.props.isNew ? "" : activeCaseData.componentsDetail,
+				socketType: this.props.isNew ? "" : activeCaseData.socketType,
+				footType: this.props.isNew ? "" : activeCaseData.footType,
+				linnerType: this.props.isNew ? "" : activeCaseData.linnerType,
+				kneeJointType: this.props.isNew ? "" : activeCaseData.kneeJointType,
+				modilityGrade: this.props.isNew ? "" : activeCaseData.modilityGrade,
+				kClassification: this.props.isNew ? "" : activeCaseData.kClassification,
 			},
 			// errors to show against validation
 			errors: {
@@ -54,7 +71,7 @@ class ProstheticForm extends Component {
 				disabilityDetail: false,
 				amputationLevel: false,
 				amputationType: false,
-				side: [],
+				side: false,
 				prescription: false,
 				componentsDetail: false,
 				socketType: false,
@@ -62,7 +79,7 @@ class ProstheticForm extends Component {
 				linnerType: false,
 				kneeJointType: false,
 				modilityGrade: false,
-				kClassification: false
+				kClassification: false,
 			},
 			profile: props.profile,
 		};
@@ -84,7 +101,7 @@ class ProstheticForm extends Component {
 			amputationType: "Type of Amputation",
 
 			side: "Side",
-			sideOptions: ["Bilateral", "Unilateral", "Left", "Right"],
+			sideOptions: ["Bilateral", "Left", "Right"],
 
 			prescription: "Prescription",
 			componentsDetail: "Detail of Components",
@@ -96,19 +113,14 @@ class ProstheticForm extends Component {
 			kneeJointType: "Knee Joint Type",
 
 			modilityGrade: "Modility Grade",
-			kClassification: "K-Classification"
+			kClassification: "K-Classification",
 		};
 
-		// validation functions
-		this.validation = {
-			isNull: (value) => value === undefined || value.length === 0,
-			isUnderSize: (minLength) => (value = "") => value.length < minLength,
-			isOverSize: (maxLength) => (value = "") => value.length > maxLength,
-			isNotNumber: (value) => isNaN(value),
-		};
+		this.triggerAction = this.triggerAction.bind(this);
 	}
 
 	setFormValue(ref, value) {
+		if (!this.props.activePatientEditable) return;
 		// validate for error
 		let error = false;
 
@@ -127,7 +139,46 @@ class ProstheticForm extends Component {
 		});
 	}
 
+	triggerAction() {
+		// if any errors
+		Object.filter = objFilter;
+		if (Object.keys(Object.filter(this.state.errors, (key, value) => value !== false)).length > 0) {
+			console.log("Skipping submission due to errors");
+			return;
+		}
+
+		if (this.props.isNew) {
+			// register it as new case, add patient id with the case
+			// prepare data
+			let formData = this.state.form;
+			// post data
+			this.props.insertCase(this.props.activePatientId, formData);
+		} else {
+			// dispatch update with case id and updated details
+			// prepare data
+			let formData = this.state.form;
+			// post data
+			this.props.updateCase(this.props.activePatientCaseId, formData);
+			// further if update was successful, merge the details with the case data
+		}
+	}
+
 	render() {
+		let triggerAction = undefined;
+		if (this.props.activePatientEditable === true) {
+			triggerAction = (
+				<Row>
+					<Col className="col-3 offset-9">
+						<div className="form-submit-button">
+							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+								{this.props.isNew ? "Save" : "Update"}
+							</Button>
+						</div>
+					</Col>
+				</Row>
+			);
+		}
+
 		return (
 			<Container>
 				{/* Onset Date, Onset Place, Operational/Peace Area */}
@@ -139,7 +190,7 @@ class ProstheticForm extends Component {
 								label={this.labels.onsetDate}
 								type="date"
 								value={this.state.form.onsetDate}
-								onChange={event => this.setFormValue("onsetDate", event.target.value)}
+								onChange={(event) => this.setFormValue("onsetDate", event.target.value)}
 								required
 								InputLabelProps={{
 									shrink: true,
@@ -375,31 +426,9 @@ class ProstheticForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary">
-								Save Case
-							</Button>
-						</div>
-					</Col>
-				</Row>
+				{/* Button for saving/updating */}
+				{triggerAction}
 			</Container>
-			/*
-				Fields:
-					side
-					deformityLevel
-					cause
-					trauma
-					disease
-					deformity_disability
-					disabilityDetail
-					treatmentObjectives
-					applianceType
-				
-				Setup other needed fields:
-					
-			*/
 		);
 	}
 }

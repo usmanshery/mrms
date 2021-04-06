@@ -9,7 +9,8 @@ export const patientPages = {
 	add: "Register New Patient",
 	search: "Search Patients",
 	view: "View Patient Details", // all but read-only
-	update: "Edit Patient Details",
+	update: "Update Patient Details",
+	test: "Testing New Forms",
 };
 
 export const changeActiveModule = (module) => onModuleSelect({ module });

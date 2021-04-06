@@ -16,3 +16,11 @@
 	user-select: none; /* Non-prefixed version, currently
 									supported by Chrome, Edge, Opera and Firefox */
 }
+
+#selectedlink {
+	background-color: rgba(128, 128, 128, 0.5);
+}
+
+.disabledLink {
+	text-decoration: line-through;
+}

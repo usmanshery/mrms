@@ -1,22 +1,27 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { registerPatientBackup } from "../../store/actions/Patient";
-import { onVerifyPatientInfo, cities, objFilter } from "../../store/session";
+import { patientRegistrationDataBackupAction, patientModuleActions } from "../../store/actions/Patient";
+import { cities, objFilter, validation } from "../../store/misc/global";
+import { onVerifyPatientInfo } from "../../store/session";
 
-import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { TextField, Select, MenuItem, InputLabel, FormControl, FormHelperText, Button, Toolbar } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
+import Typography from "@material-ui/core/Typography";
 import { Container, Row, Col } from "react-bootstrap";
 
 import "./FormStyles.css";
 
 const mapStateToProps = (state) => {
-	return {};
+	return {
+		activePatientId: state.patientModule.activePatientId,
+		activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
 		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientBackup: (backup) => dispatch(registerPatientBackup(backup)),
+		backupRegData: (backup) => dispatch(patientRegistrationDataBackupAction(backup)),
 	};
 };
 
@@ -31,22 +36,24 @@ class PatientForm extends Component {
 	constructor(props) {
 		super(props);
 
+		this.clearForm = this.clearForm.bind(this);
+
 		this.state = {
 			form: {
 				// Row
-				name: this.props.loadData.name ? this.props.loadData.name : "",
-				fathername: this.props.loadData.fathername ? this.props.loadData.fathername : "",
+				name: this.props.activePatientData.name ? this.props.activePatientData.name : "",
+				fathername: this.props.activePatientData.fathername ? this.props.activePatientData.fathername : "",
+				sex: this.props.activePatientData.sex ? this.props.activePatientData.sex : "",
+				age: this.props.activePatientData.age ? this.props.activePatientData.age : "",
 				// Row
-				sex: this.props.loadData.sex ? this.props.loadData.sex : "",
-				age: this.props.loadData.age ? this.props.loadData.age : "",
-				phone: this.props.loadData.phone ? this.props.loadData.phone : "",
+				address: this.props.activePatientData.address ? this.props.activePatientData.address : "",
 				// Row
-				rank: this.props.loadData.rank ? this.props.loadData.rank : "",
-				armynumber: this.props.loadData.armynumber ? this.props.loadData.armynumber : "",
-				unit: this.props.loadData.unit ? this.props.loadData.unit : "",
+				phone: this.props.activePatientData.phone ? this.props.activePatientData.phone : "",
+				city: this.props.activePatientData.city ? this.props.activePatientData.city : "",
 				// Row
-				address: this.props.loadData.address ? this.props.loadData.address : "",
-				city: this.props.loadData.city ? this.props.loadData.city : "",
+				rank: this.props.activePatientData.rank ? this.props.activePatientData.rank : "",
+				armynumber: this.props.activePatientData.armynumber ? this.props.activePatientData.armynumber : "",
+				unit: this.props.activePatientData.unit ? this.props.activePatientData.unit : "",
 			},
 			// errors to show against validation
 			errors: {
@@ -58,7 +65,11 @@ class PatientForm extends Component {
 				phone: false,
 				address: false,
 				city: false,
+				rank: false,
+				armynumber: false,
+				unit: false,
 			},
+			readOnly: this.props.readOnly ? this.props.readOnly : false,
 		};
 
 		// labels for inputs
@@ -71,52 +82,46 @@ class PatientForm extends Component {
 			address: "Address",
 			city: "Select City",
 			cityOptions: cities,
+			rank: "Rank",
+			rankOptions: ["Lt", "Capt", "Maj", "Lt Col", "Col", "Brig", "Maj Gen", "Lt Gen", "Gen"],
+			armynumber: "Army Number",
+			unit: "Unit",
 		};
-
-		// validation functions
-		this.validation = {
-			isNull: (value) => value === undefined || value === null || value.length === 0,
-			isUnderSize: (minLength) => (value = "") => value.length < minLength,
-			isOverSize: (maxLength) => (value = "") => value.length > maxLength,
-			isNotNumber: (value) => isNaN(value),
-		};
-
-		this.trigger =
-			this.props.triggerName && this.props.triggerCallback ? (
-				<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-					{this.props.triggerName}
-				</Button>
-			) : undefined;
 	}
 
 	setFormValue(ref, value) {
+		if (this.state.readOnly) {
+			return; // haha
+		}
 		// validate for error
 		let error = false;
+		// some things that are not compatible
+		if (value === null) value = "";
 
 		if (ref === "name") {
-			if (this.validation.isNull(value)) error = "Patient Name is Required";
-			if (this.validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
+			if (validation.isNull(value)) error = "Patient Name is Required";
+			if (validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
 		}
 		if (ref === "fathername") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
-			if (this.validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
+			if (validation.isNull(value)) error = "This Field is Required";
+			if (validation.isOverSize(100)(value)) error = "Name Should Be Under 100 Characters";
 		}
 		if (ref === "phone") {
-			if (this.validation.isNull(value)) error = "Patient's Contact Number is Required";
-			if (this.validation.isUnderSize(11)(value) || this.validation.isOverSize(11)(value)) error = "Contact Number Format: 11 Digit | Example: 03219988777";
-			if (this.validation.isNotNumber(value)) return;
+			if (validation.isNull(value)) error = "Patient's Contact Number is Required";
+			if (validation.isUnderSize(11)(value) || validation.isOverSize(11)(value)) error = "Contact Number Format: 11 Digit | Example: 03219988777";
+			if (validation.isNotNumber(value)) return;
 		}
 		if (ref === "sex") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
+			if (validation.isNull(value)) error = "This Field is Required";
 		}
 		if (ref === "age") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
+			if (validation.isNull(value)) error = "This Field is Required";
 		}
 		if (ref === "address") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
+			if (validation.isNull(value)) error = "This Field is Required";
 		}
 		if (ref === "city") {
-			if (this.validation.isNull(value)) error = "This Field is Required";
+			if (validation.isNull(value)) error = "This Field is Required";
 		}
 
 		// console.log("reference:", ref);
@@ -163,23 +168,67 @@ class PatientForm extends Component {
 			return;
 		}
 
-		this.props.triggerCallback(this.state.form);
+		// this.props.triggerCallback(this.state.form);
+		// clean data and any final validation/ checks
+		// const profile = {
+		// 	...data,
+		// };
+		// this.props.registerPatientProfile(profile);
 	}
 
-	// if page is being unloaded, save the state
-	componentWillUnmount() {
-		this.props.registerPatientBackup(this.state.form);
+	clearForm() {
+		this.setState({
+			form: {
+				name: "",
+				fathername: "",
+				sex: "",
+				age: "",
+				phone: "",
+				rank: "",
+				armynumber: "",
+				unit: "",
+				address: "",
+				city: "",
+			},
+		});
 	}
 
 	render() {
-		const triggerElement = this.trigger ? (
-			<Row>
-				<Col className="col-3 offset-9">{this.trigger}</Col>
-			</Row>
-		) : undefined;
+		let triggerElement = undefined;
+		if (this.props.action === patientModuleActions.regNew || this.props.action === patientModuleActions.updateExisting) {
+			const triggerTitle = this.props.action === patientModuleActions.regNew ? "Register New Patient" : "Update Personal Details";
+			triggerElement = (
+				<Row>
+					<Col className="col-2 offset-7">
+						<Button variant="contained" color="secondary" onClick={() => this.clearForm()}>
+							Clear Data
+						</Button>
+					</Col>
+					<Col className="col-3 ">
+						<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+							{triggerTitle}
+						</Button>
+					</Col>
+				</Row>
+			);
+		}
+
+		let titleRow = undefined;
+		if (this.props.title) {
+			titleRow = (
+				<Row>
+					<Toolbar>
+						<Typography variant="h5" id="tableTitle" component="div">
+							{this.props.title}
+						</Typography>
+					</Toolbar>
+				</Row>
+			);
+		}
 
 		return (
 			<Container className="xgreenBackground">
+				{titleRow}
 				{/* Name, Father's Name, Gender, Age */}
 				<Row>
 					<Col className="col-4">
@@ -254,7 +303,6 @@ class PatientForm extends Component {
 						<FormControl error={this.state.errors.city !== false} variant="standard" fullWidth>
 							<Autocomplete
 								freeSolo
-								inputValue={this.state.form.city}
 								onChange={(event, value) => this.setFormValue("city", value)}
 								options={this.labels.cityOptions}
 								renderInput={(params) => <TextField required error={this.state.errors.city ? true : false} {...params} label={this.labels.city} variant="standard" />}
@@ -273,6 +321,46 @@ class PatientForm extends Component {
 							required
 							variant="standard"
 						/>
+					</Col>
+				</Row>
+				{/* Rank, Armynumber, Unit */}
+				<Row>
+					{/* Rank */}
+					<Col className="col-3">
+						<FormControl error={this.state.errors.rank !== false} variant="standard" fullWidth>
+							<Autocomplete
+								onChange={(event, value) => this.setFormValue("rank", value)}
+								options={this.labels.rankOptions}
+								renderInput={(params) => <TextField {...params} label={this.labels.rank} variant="standard" />}
+							/>
+							<FormHelperText>{this.state.errors.rank}</FormHelperText>
+						</FormControl>
+					</Col>
+					{/* Armynumber */}
+					<Col className="col-3">
+						<FormControl error={this.state.errors.armynumber !== false} variant="standard" fullWidth>
+							<TextField
+								margin="none"
+								label={this.labels.armynumber}
+								value={this.state.form.armynumber}
+								onChange={(event) => this.setFormValue("armynumber", event.target.value)}
+								variant="standard"
+							/>
+							<FormHelperText>{this.state.errors.armynumber}</FormHelperText>
+						</FormControl>
+					</Col>
+					{/* Unit */}
+					<Col className="col-3">
+						<FormControl error={this.state.errors.unit !== false} variant="standard" fullWidth>
+							<TextField
+								margin="none"
+								label={this.labels.unit}
+								value={this.state.form.unit}
+								onChange={(event) => this.setFormValue("unit", event.target.value)}
+								variant="standard"
+							/>
+							<FormHelperText>{this.state.errors.unit}</FormHelperText>
+						</FormControl>
 					</Col>
 				</Row>
 				{triggerElement}

@@ -1,12 +1,11 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { registerPatient } from "../../store/actions/Patient";
-import { onVerifyPatientInfo, cities, objFilter } from "../../store/session";
 
-import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { cities, objFilter } from "../../store/misc/global";
+
 import { Autocomplete } from "@material-ui/lab";
-
 import { Container, Row, Col } from "react-bootstrap";
+import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
 
 import "./FormStyles.css";
 
@@ -15,17 +14,12 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => {
-	return {
-		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientProfile: (profile) => dispatch(registerPatient(profile)),
-	};
+	return {};
 };
 
-class PatientSearchForm extends Component {
+class PatientCasesSearchForm extends Component {
 	constructor(props) {
 		super(props);
-
-		this.searchPersonal = this.searchPersonal.bind(this);
 
 		this.state = {
 			form: {
@@ -76,6 +70,13 @@ class PatientSearchForm extends Component {
 			city: "City",
 			cityOptions: cities,
 		};
+
+		this.trigger =
+			this.props.triggerName && this.props.triggerCallback ? (
+				<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+					{this.props.triggerName}
+				</Button>
+			) : undefined;
 	}
 
 	setFormValue(ref, value) {
@@ -97,23 +98,52 @@ class PatientSearchForm extends Component {
 		});
 	}
 
-	searchPersonal() {
+	// check for unique values and if correct, register the profile
+	triggerAction() {
 		Object.filter = objFilter;
-
-		let params = Object.filter(this.state.form, (key, value) => value && value !== null && value !== "");
-		if (Object.keys(params).length > 0) {
-		} else {
-			console.log("Sorry no search");
+		// if missing any required values
+		let usedKeys = Object.keys(Object.filter(this.state.form, (key, value) => value !== undefined && value !== null && value !== ""));
+		if (usedKeys.length === 0) {
+			return;
 		}
+		let filteredParameters = Object.filter(this.state.form, (key, value) => value !== undefined && value !== null && value !== "");
+
+		this.props.triggerCallback(filteredParameters);
 	}
 
-	searchCases() {}
+	clearForm() {
+		this.setState({
+			form: {
+				name: "",
+				fathername: "",
+				sex: "",
+				age: "",
+				ageRange: "",
+				phone: "",
+				rank: "",
+				armynumber: "",
+				unit: "",
+				city: "",
+			},
+		});
+	}
 
 	render() {
+		const triggerElement = this.trigger ? (
+			<Row>
+				<Col className="col-1 offset-8">
+					<Button variant="contained" color="secondary" onClick={() => this.clearForm()}>
+						Clear
+					</Button>
+				</Col>
+				<Col className="col-3 ">{this.trigger}</Col>
+			</Row>
+		) : undefined;
+
 		return (
 			<Container>
-				<Row>Search (Patient Persoanl Details)</Row>
-				{/* Name & Father's name */}
+				<Row>Search By Cases</Row>
+				{/* Case Type, Case ID */}
 				<Row>
 					{/* Name */}
 					<Col className="col-6">
@@ -142,7 +172,7 @@ class PatientSearchForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
-				{/* Age, Age Range, Gender, Contact Number */}
+				{/* Case Registration Date */}
 				<Row>
 					{/* Gender */}
 					<Col className="col-3">
@@ -195,69 +225,7 @@ class PatientSearchForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
-				{/* Rank, Armynumber, Unit */}
-				<Row>
-					{/* Rank */}
-					<Col className="col-2">
-						<FormControl error={this.state.errors.rank !== false} variant="standard" fullWidth>
-							<Autocomplete
-								onChange={(event, value) => this.setFormValue("rank", value)}
-								options={this.labels.rankOptions}
-								renderInput={(params) => <TextField {...params} label={this.labels.rank} variant="standard" />}
-							/>
-							<FormHelperText>{this.state.errors.rank}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Armynumber */}
-					<Col className="col-2">
-						<FormControl error={this.state.errors.armynumber !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.armynumber}
-								value={this.state.form.armynumber}
-								onChange={(event) => this.setFormValue("armynumber", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.armynumber}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Unit */}
-					<Col className="col-3">
-						<FormControl error={this.state.errors.unit !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.unit}
-								value={this.state.form.unit}
-								onChange={(event) => this.setFormValue("unit", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.unit}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* City */}
-					<Col className="col-5">
-						<FormControl required error={this.state.errors.city !== false} variant="standard" fullWidth>
-							<Autocomplete
-								freeSolo
-								required
-								onChange={(event, value) => this.setFormValue("city", value)}
-								options={this.labels.cityOptions}
-								renderInput={(params) => <TextField {...params} label={this.labels.city} variant="standard" />}
-							/>
-							<FormHelperText>{this.state.errors.city}</FormHelperText>
-						</FormControl>
-					</Col>
-				</Row>
-
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.searchPersonal()}>
-								Search
-							</Button>
-						</div>
-					</Col>
-				</Row>
+				{triggerElement}
 			</Container>
 			/*
 				Fields:
@@ -278,4 +246,4 @@ class PatientSearchForm extends Component {
 	}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(PatientSearchForm);
+export default connect(mapStateToProps, mapDispatchToProps)(PatientCasesSearchForm);

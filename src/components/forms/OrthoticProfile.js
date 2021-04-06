@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { onVerifyPatientInfo, registerPatient } from "../../store/session";
+import { objFilter } from "../../store/misc/global";
+import { insertCaseAction, updateCaseAction } from "../../store/actions/Patient";
 
 import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
@@ -10,13 +11,18 @@ import { Container, Row, Col } from "react-bootstrap";
 import "./FormStyles.css";
 
 const mapStateToProps = (state) => {
-	return {};
+	return {
+		activePatientId: state.patientModule.activePatientId,
+		activePatientCaseId: state.patientModule.activePatientCaseId,
+		activePatientData: state.patientModule.activePatientData,
+		activePatientEditable: state.patientModule.activePatientEditable,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
-		verifyPatientInfo: (contactNo) => dispatch(onVerifyPatientInfo({ contactNo })),
-		registerPatientProfile: (profile) => dispatch(registerPatient(profile)),
+		insertCase: (patientId, caseDetails) => dispatch(insertCaseAction(patientId, "orthotic", caseDetails)),
+		updateCase: (caseId, caseDetails) => dispatch(updateCaseAction(caseId, "orthotic", caseDetails)),
 	};
 };
 
@@ -24,25 +30,34 @@ const mapDispatchToProps = (dispatch) => {
 	this form will create basic user profile and submit the json object of basic user profile
 	this class will have dispatch method to add new patient
 	this class will have dispatch method to verify user information against existing users
-
 */
 
 class OrthoticForm extends Component {
 	constructor(props) {
 		super(props);
 
+		// if active case exists, fetch its data
+		let activeCaseData = this.props.activePatientData.cases.filter((_case) => _case.orthotic._id === this.props.activePatientCaseId);
+		if (activeCaseData.length === 0) {
+			activeCaseData = undefined;
+		}
+
+		if (activeCaseData !== undefined) {
+			activeCaseData = activeCaseData[0].orthotic;
+		}
+
 		this.state = {
 			form: {
 				// Row
-				side: [],
-				deformityLevel: [],
-				cause: [],
-				trauma: [],
-				disease: [],
-				deformity_disability: "",
-				disabilityDetail: "",
-				treatmentObjectives: [],
-				applianceType: [],
+				side: this.props.isNew ? [] : activeCaseData.side,
+				deformityLevel: this.props.isNew ? [] : activeCaseData.deformityLevel,
+				cause: this.props.isNew ? [] : activeCaseData.cause,
+				trauma: this.props.isNew ? [] : activeCaseData.trauma,
+				disease: this.props.isNew ? [] : activeCaseData.disease,
+				deformity_disability: this.props.isNew ? "" : activeCaseData.deformity_disability,
+				disabilityDetail: this.props.isNew ? "" : activeCaseData.disabilityDetail,
+				treatmentObjectives: this.props.isNew ? [] : activeCaseData.treatmentObjectives,
+				applianceType: this.props.isNew ? [] : activeCaseData.applianceType,
 			},
 			// errors to show against validation
 			errors: {
@@ -62,7 +77,7 @@ class OrthoticForm extends Component {
 		// labels for inputs
 		this.labels = {
 			side: "Side",
-			sideOptions: ["Bilateral", "Unilateral", "Left", "Right"],
+			sideOptions: ["Bilateral", "Left", "Right"],
 
 			// other
 			deformityLevel: "Level of Deformity",
@@ -91,16 +106,11 @@ class OrthoticForm extends Component {
 			applianceTypeOptions: ["FO", "AFO", "KAFO", "HKAFO", "KO", "Hip O"],
 		};
 
-		// validation functions
-		this.validation = {
-			isNull: (value) => value === undefined || value.length === 0,
-			isUnderSize: (minLength) => (value = "") => value.length < minLength,
-			isOverSize: (maxLength) => (value = "") => value.length > maxLength,
-			isNotNumber: (value) => isNaN(value),
-		};
+		this.triggerAction = this.triggerAction.bind(this);
 	}
 
 	setFormValue(ref, value) {
+		if (!this.props.activePatientEditable) return;
 		// validate for error
 		let error = false;
 
@@ -119,10 +129,50 @@ class OrthoticForm extends Component {
 		});
 	}
 
+	// check for unique values and if correct, register the profile
+	triggerAction() {
+		// if any errors
+		Object.filter = objFilter;
+		if (Object.keys(Object.filter(this.state.errors, (key, value) => value !== false)).length > 0) {
+			console.log("Skipping submission due to errors");
+			return;
+		}
+
+		if (this.props.isNew) {
+			// register it as new case, add patient id with the case
+			// prepare data
+			let formData = this.state.form;
+			// post data
+			this.props.insertCase(this.props.activePatientId, formData);
+		} else {
+			// dispatch update with case id and updated details
+			// prepare data
+			let formData = this.state.form;
+			// post data
+			this.props.updateCase(this.props.activePatientCaseId, formData);
+			// further if update was successful, merge the details with the case data
+		}
+	}
+
 	render() {
+		let triggerAction = undefined;
+		if (this.props.activePatientEditable === true) {
+			triggerAction = (
+				<Row>
+					<Col className="col-3 offset-9">
+						<div className="form-submit-button">
+							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+								{this.props.isNew ? "Save" : "Update"}
+							</Button>
+						</div>
+					</Col>
+				</Row>
+			);
+		}
+
 		return (
 			<Container className="xgreenBackground">
-				{/* Name, Father's Name, Gender, Age */}
+				{/* Side, deformity level */}
 				<Row>
 					{/* Side */}
 					<Col className="col-6">
@@ -131,6 +181,7 @@ class OrthoticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("side", value)}
 								options={this.labels.sideOptions}
+								value={this.state.form.side}
 								renderInput={(params) => <TextField {...params} label={this.labels.side} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.side}</FormHelperText>
@@ -144,12 +195,14 @@ class OrthoticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("deformityLevel", value)}
 								options={this.labels.deformityLevelOptions}
+								value={this.state.form.deformityLevel}
 								renderInput={(params) => <TextField {...params} label={this.labels.deformityLevel} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.deformityLevel}</FormHelperText>
 						</FormControl>
 					</Col>
 				</Row>
+				{/* Cause, Trauma */}
 				<Row>
 					{/* Cause */}
 					<Col className="col-6">
@@ -158,6 +211,7 @@ class OrthoticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("cause", value)}
 								options={this.labels.causeOptions}
+								value={this.state.form.cause}
 								renderInput={(params) => <TextField {...params} label={this.labels.cause} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.cause}</FormHelperText>
@@ -171,12 +225,14 @@ class OrthoticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("trauma", value)}
 								options={this.labels.traumaOptions}
+								value={this.state.form.trauma}
 								renderInput={(params) => <TextField {...params} label={this.labels.trauma} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.trauma}</FormHelperText>
 						</FormControl>
 					</Col>
 				</Row>
+				{/* Deformity/ Disability, Disease */}
 				<Row>
 					{/* Disease */}
 					<Col className="col-6">
@@ -186,6 +242,7 @@ class OrthoticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("disease", value)}
 								options={this.labels.diseaseOptions}
+								value={this.state.form.disease}
 								renderInput={(params) => <TextField {...params} label={this.labels.disease} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.disease}</FormHelperText>
@@ -205,6 +262,7 @@ class OrthoticForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
+				{/* Deformity/ Disability */}
 				<Row>
 					{/* Deformity/ Disability */}
 					<Col className="col-12">
@@ -221,31 +279,9 @@ class OrthoticForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary">
-								Save Case
-							</Button>
-						</div>
-					</Col>
-				</Row>
+
+				{triggerAction}
 			</Container>
-			/*
-				Fields:
-					side
-					deformityLevel
-					cause
-					trauma
-					disease
-					deformity_disability
-					disabilityDetail
-					treatmentObjectives
-					applianceType
-				
-				Setup other needed fields:
-					
-			*/
 		);
 	}
 }

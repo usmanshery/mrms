@@ -11,6 +11,8 @@ const mapStateToProps = (state) => {
 	return {
 		activeModule: state.activeModule,
 		activePatientPage: state.patientModule.activePage,
+		activePatientId: state.patientModule.activePatientId,
+		activePatientEditable: state.patientModule.activePatientEditable,
 	};
 };
 
@@ -32,9 +34,18 @@ class Navbar extends Component {
 			.map((pair) => {
 				return { key: pair[0], value: pair[1] };
 			})
-			.map((pair) => {
+			.map((pair, index) => {
+				let active = true;
+				if (!this.props.activePatientId && (index === 2 || index === 3)) active = false;
+
 				return (
-					<MenuItem onClick={() => this.props.selectPatientPage(pair.value)} key={pair.key}>
+					<MenuItem
+						id={this.props.activePatientPage === pair.value ? "selectedlink" : undefined}
+						active={active}
+						className={active ? "" : "disabledLink"}
+						onClick={() => this.props.selectPatientPage(pair.value)}
+						key={pair.key}
+					>
 						{pair.value}
 					</MenuItem>
 				);

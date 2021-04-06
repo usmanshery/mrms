@@ -7,8 +7,12 @@
 
 .form-submit-button {
 	height: 100%;
-    display: flex;
-    align-items: center;
+	display: flex;
+	align-items: center;
 	flex-direction: row-reverse;
 }
 
+.checkboxSection {
+	display: flex;
+	height: 25px;
+}
