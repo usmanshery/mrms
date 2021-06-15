@@ -1,7 +1,7 @@
 import { onFailure } from "../session";
 import {
 	onPatientRegister,
-	onPatientRegisterBackup,
+	onPatientUpdate,
 	onPatientPopCallback,
 	onPatientSearch,
 	onPatientClose,
@@ -11,13 +11,20 @@ import {
 	onCaseNew,
 	onCaseAdded,
 	onCaseUpdated,
+	onFileDeleted,
+	onFileUploaded,
 } from "../session";
 import { apiCall, httpHeaders, httpMethods } from "../middleware/api";
+// import { uploaderCall } from "../middleware/uploader";
+
 
 // values for toast notifications
 export const patientModuleNotifications = {
 	regSuccess: "Patient Added Successfuly",
 	regFailure: "Could Not Add New Patient",
+	
+	updateSuccess: "Patient Profile Updated Successfuly",
+	updateFailure: "Patient Profile Update Failed",
 
 	caseAddSuccess: "New Case Added Successfuly",
 	caseAddFailure: "Couldn't Add New Case",
@@ -27,7 +34,14 @@ export const patientModuleNotifications = {
 
 	searchSuccess: "Search Results Updated",
 	searchFailure: "Search Failed",
+
+	uploadSuccess: "File(s) uploaded successfuly",
+	uploadFailure: "File(s) upload failed",
+
+	uploadRemoveSuccess: "File deleted successfuly",
+	uploadRemoveFailure: "File deletion failed",
 };
+
 
 export const patientModuleActions = {
 	regNew: "Register Patient",
@@ -37,11 +51,15 @@ export const patientModuleActions = {
 
 // urls
 const registerUrl = "patients/insertprofile";
+const updateUrl = "patients/updateProfileById";
 const searchProfileUrl = "patients/searchprofile";
 
 const insertCaseUrl = "patients/insertCase";
 const updateCaseUrl = "patients/updateCase";
 // const searchCasesUrl = "patients/searchcases";
+
+const deleteFileUrl = "patients/removeAttachment";
+const uploadFileUrl = "patients/uploadAttachment";
 
 // -- patient
 export const registerPatientAction = (profile) =>
@@ -59,6 +77,22 @@ export const registerPatientAction = (profile) =>
 		onFailure: onFailure.type,
 	});
 
+export const updatePatientAction = (patientId, profile) =>
+	apiCall({
+		url: updateUrl,
+		callParams: {
+			method: httpMethods.put,
+			headers: httpHeaders,
+			// credentials: "include",
+			body: JSON.stringify({
+				id: patientId,
+				profile,
+			}),
+		},
+		onSuccess: onPatientUpdate.type,
+		onFailure: onFailure.type,
+	});
+
 export const searchPatientProfileAction = (profile) =>
 	apiCall({
 		url: searchProfileUrl,
@@ -73,8 +107,6 @@ export const searchPatientProfileAction = (profile) =>
 		onSuccess: onPatientSearch.type,
 		onFailure: onFailure.type,
 	});
-
-export const patientRegistrationDataBackupAction = (backup) => onPatientRegisterBackup({ backup });
 
 export const removePatientCbAction = (callbackAction) => onPatientPopCallback({ callbackAction });
 
@@ -121,5 +153,34 @@ export const editCaseAction = (caseId) => onCaseEdit({ caseId });
 export const newCaseAction = (newCaseCategory) => onCaseNew({ newCaseCategory });
 
 export const closePatientAction = () => onPatientClose({});
+
+export const deleteFileAction = (fileId, caseId) =>
+	apiCall({
+		url: deleteFileUrl,
+		callParams: {
+			method: httpMethods.post,
+			headers: httpHeaders,
+			// credentials: "include",
+			body: JSON.stringify({
+				fileId,
+				caseId,
+			}),
+		},
+		onSuccess: onFileDeleted.type,
+		onFailure: onFailure.type,
+	});
+
+export const uploadFileAction = (data) =>
+	apiCall({
+		url: uploadFileUrl,
+		callParams: {
+			method: httpMethods.post,
+			// headers: httpHeaders,
+			// credentials: "include",
+			body: data,
+		},
+		onSuccess: onFileUploaded.type,
+		onFailure: onFailure.type,
+	});
 
 // export const registerPatientBackup = (backup) => onPatientRegisterBackup({ backup });

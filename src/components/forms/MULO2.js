@@ -1,14 +1,33 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { TextField, FormControl, Button, FormControlLabel, RadioGroup, Radio, Checkbox } from "@material-ui/core";
-
+import { TextField, FormControlLabel, Checkbox, Typography, Toolbar } from "@material-ui/core";
+import { ULO2FormBooleanFields, defaultULO2FormValues, defaultULO2LableValues } from "../../store/misc/formValues";
+import { verticalSpacer } from "../../store/misc/global";
 import { Container, Row, Col } from "react-bootstrap";
 
-import "./FormStyles.css";
+import { navModules } from "../../store/actions/Navigation";
 
-const mapStateToProps = (state) => {
-	return {};
+const mapStateToProps = (state, props) => {
+	// refine behavioral props here
+	let readOnly = props.readOnly === undefined ? false : props.readOnly;
+
+	if (state.activeModule === navModules.patient) {
+		return {
+			readOnly,
+			formValues: state.patientModule.activeCase[state.patientModule.activeCase.category].ULO2,
+		};
+	}
+
+	return {
+		activePatientCaseId: state.patientModule.activePatientCaseId,
+		activePatientData: state.patientModule.activePatientData,
+		activePatientEditable: state.patientModule.activePatientEditable,
+		// if station
+		openCases: state.stationModule.openCases,
+		activeCaseId: state.stationModule.activeCaseId,
+		activeCaseCategory: state.stationModule.activeCaseCategory,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
@@ -19,132 +38,51 @@ class ULO2Form extends Component {
 	constructor(props) {
 		super(props);
 
+		let activeCaseData = { ...defaultULO2FormValues, ...this.props.formValues };
+
+		// clean boolean values
+		for (var key in activeCaseData) {
+			if (activeCaseData.hasOwnProperty(key)) {
+				if (ULO2FormBooleanFields.includes(key)) {
+					activeCaseData[key] = activeCaseData[key] === "true";
+				}
+			}
+		}
+
+		// initialize the state
 		this.state = {
-			form: {
-				// section 1
-				s1r1f1: "",
-				s1r2f1: "",
-				s1r2f2: "",
-				s1r3f1: "",
-				s1r3f2: "",
-
-				// section 2
-				s2r1f1: "",
-				s2r1f2: "",
-				s2r2f1: "",
-				s2r2f2: "",
-
-				instructions: "",
-
-				admission: "",
-				casting: "",
-				fitting: "",
-				delivery: "",
-				replace: "",
-				followup: "",
-
-				co: false,
-				ctlso: false,
-				tlso: false,
-				lso: false,
-
-				volumeChange: false,
-				volumeChangeOther: false,
-				componentsBreakdown: false,
-				alignmentProblem: false,
-				growth: false,
-				accident: false,
-				falseInfo: false,
-				wear: false,
-				stolenLost: false,
-			},
-			// errors to show against validation
-			errors: {},
-			profile: props.profile,
+			form: activeCaseData,
 		};
 
 		// labels for inputs
-		this.labels = {
-			instructions: "Instructions",
+		this.labels = { ...defaultULO2LableValues };
 
-			admission: "Admission Date",
-			casting: "Casting Date",
-			fitting: "Fitting Date",
-			delivery: "Delivery Date",
-			replace: "Replace Date",
-			followup: "Follow Up Date",
-
-			co: "C.O",
-			ctlso: "C.T.L.S.O",
-			tlso: "T.L.S.O",
-			lso: "L.S.O",
-
-			volumeChange: "01 Volume Change",
-			volumeChangeOther: "02 Volume Change + Other",
-			componentsBreakdown: "03 Components breakdown",
-			alignmentProblem: "04 Alignment problem",
-			growth: "05 Growth",
-			accident: "06 Accident",
-			falseInfo: "07 False Info",
-			wear: "08 Wear",
-			stolenLost: "09 Stolen/ Lost",
-		};
-
-		this.triggerAction = this.triggerAction.bind(this);
+		this.setFormValue = this.setFormValue.bind(this);
 	}
 
 	setFormValue(ref, value) {
-		console.log(value);
-		// if (!this.props.activePatientEditable) return;
-		// validate for error
-		let error = false;
-
-		// if required, set following for error validation
-		// if (ref === "<title>") {}
+		if (this.props.readOnly) return;
+		this.props.setFormValue("ULO2", { [ref]: value }, true);
 
 		this.setState({
 			form: {
 				...this.state.form,
 				[ref]: value,
 			},
-			errors: {
-				...this.state.errors,
-				[ref]: error,
-			},
 		});
 	}
 
-	// check for unique values and if correct, register the profile
-	triggerAction() {}
-
 	render() {
-		const verticalSpacer = (spaceRequired) => {
-			return (
-				<Row>
-					<Col>
-						<div style={{ height: `${spaceRequired}px` }}></div>
-					</Col>
-				</Row>
-			);
-		};
-
-		let triggerAction = undefined;
-		if (this.props.activePatientEditable === true) {
-			triggerAction = (
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-								{this.props.isNew ? "Save" : "Update"}
-							</Button>
-						</div>
-					</Col>
-				</Row>
-			);
-		}
-
 		return (
 			<Container style={{ background: "white" }} className="xgreenBackground">
+				{/* Form heading */}
+				<Row>
+					<Toolbar>
+						<Typography variant="h5" id="tableTitle" component="div">
+							{"ULO-2 Measurement Form"}
+						</Typography>
+					</Toolbar>
+				</Row>
 				{/* Three sets of inputs */}
 				<Row>
 					{/* Section 1 */}
@@ -425,9 +363,6 @@ class ULO2Form extends Component {
 						/>
 					</Col>
 				</Row>
-
-				{verticalSpacer(20)}
-				{triggerAction}
 			</Container>
 		);
 	}

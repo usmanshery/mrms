@@ -1,14 +1,33 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { TextField, FormControl, Button, FormControlLabel, RadioGroup, Radio, Checkbox } from "@material-ui/core";
-
+import { TextField, FormControlLabel, Checkbox, Toolbar, Typography } from "@material-ui/core";
+import { LLORFormBooleanFields, defaultLLORFormValues, defaultLLORLableValues } from "../../store/misc/formValues";
+import { verticalSpacer } from "../../store/misc/global";
 import { Container, Row, Col } from "react-bootstrap";
 
-import "./FormStyles.css";
+import { navModules } from "../../store/actions/Navigation";
 
-const mapStateToProps = (state) => {
-	return {};
+const mapStateToProps = (state, props) => {
+	// refine behavioral props here
+	let readOnly = props.readOnly === undefined ? false : props.readOnly;
+
+	if (state.activeModule === navModules.patient) {
+		return {
+			readOnly,
+			formValues: state.patientModule.activeCase[state.patientModule.activeCase.category].LLOR,
+		};
+	}
+
+	return {
+		activePatientCaseId: state.patientModule.activePatientCaseId,
+		activePatientData: state.patientModule.activePatientData,
+		activePatientEditable: state.patientModule.activePatientEditable,
+		// if station
+		openCases: state.stationModule.openCases,
+		activeCaseId: state.stationModule.activeCaseId,
+		activeCaseCategory: state.stationModule.activeCaseCategory,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
@@ -19,159 +38,51 @@ class LLORForm extends Component {
 	constructor(props) {
 		super(props);
 
+		let activeCaseData = { ...defaultLLORFormValues, ...this.props.formValues };
+
+		// clean boolean values
+		for (var key in activeCaseData) {
+			if (activeCaseData.hasOwnProperty(key)) {
+				if (LLORFormBooleanFields.includes(key)) {
+					activeCaseData[key] = activeCaseData[key] === "true";
+				}
+			}
+		}
+
+		// initialize the state
 		this.state = {
-			form: {
-				repairN: "",
-				repairDate: "",
-				orthosisN: "",
-				deliveryDate: "",
-
-				ho: false,
-				fo: false,
-				hkafo: false,
-				shoe: false,
-				kafo: false,
-				so: false,
-				ko: false,
-				co: false,
-				afo: false,
-
-				AJjointReplaced: false,
-				AJaxisBoldReplaced: false,
-				AJnutClipReplaced: false,
-				AJwasherReplaced: false,
-				springReplaced: false,
-
-				KJjointReplaced: false,
-				KJaxisBoldReplaced: false,
-				KJnutClipReplaced: false,
-				KJwasherReplaced: false,
-				bearingReplaced: false,
-				lockMechReplaced: false,
-
-				HJjointReplaced: false,
-				HJaxisBoldReplaced: false,
-				HJnutClipReplaced: false,
-				HJwasherReplaced: false,
-
-				strapsReplaced: false,
-				kneeCapReplaced: false,
-				kneeCapRepaired: false,
-
-				sideBarsReplaced: false,
-				sideBarsRepaired: false,
-				leatherReplaced: false,
-				rivetsReplaced: false,
-
-				remarks: "",
-			},
-			// errors to show against validation
-			errors: {},
-			profile: props.profile,
+			form: activeCaseData,
 		};
 
 		// labels for inputs
-		this.labels = {
-			repairN: "Repair N°",
-			repairDate: "Repair Date",
-			orthosisN: "Orthosis N°",
-			deliveryDate: "Delivery Date",
+		this.labels = { ...defaultLLORLableValues };
 
-			ho: "H.O",
-			fo: "F.O",
-			so: "S.O",
-			ko: "K.O",
-			co: "C.O",
-			shoe: "Shoe",
-			hkafo: "H.K.A.F.O",
-			kafo: "K.A.F.O",
-			afo: "A.F.O",
-
-			AJjointReplaced: "01 Joint Replaced",
-			AJaxisBoldReplaced: "02 Axis /Bolt Replaced",
-			AJnutClipReplaced: "03 Nut /Clip Replaced",
-			AJwasherReplaced: "04 Washer Replaced",
-			springReplaced: "05 Spring Replaced",
-
-			KJjointReplaced: "01 Joint Replaced",
-			KJaxisBoldReplaced: "02 Axis /Bolt Replaced",
-			KJnutClipReplaced: "03 Nut /Clip Replaced",
-			KJwasherReplaced: "04 Washer Replaced",
-			bearingReplaced: "05 Bearing Replaced",
-			lockMechReplaced: "06 Lock Mech Replaced",
-
-			HJjointReplaced: "01 Joint Replaced",
-			HJaxisBoldReplaced: "02 Axis /Bolt Replaced",
-			HJnutClipReplaced: "03 Nut /Clip Replaced",
-			HJwasherReplaced: "04 Washer Replaced",
-
-			strapsReplaced: "01 Straps Replaced",
-			kneeCapReplaced: "02 Knee cap Replaced",
-			kneeCapRepaired: "03 Knee cap Repaired",
-
-			sideBarsReplaced: "01 Side Bars Replaced",
-			sideBarsRepaired: "02 Side Bars Repaired",
-			leatherReplaced: "03 Leather Replaced",
-			rivetsReplaced: "04 Rivets Replaced",
-
-			remarks: "Remarks",
-		};
-
-		this.triggerAction = this.triggerAction.bind(this);
+		this.setFormValue = this.setFormValue.bind(this);
 	}
 
 	setFormValue(ref, value) {
-		console.log(value);
-		// if (!this.props.activePatientEditable) return;
-		// validate for error
-		let error = false;
-
-		// if required, set following for error validation
-		// if (ref === "<title>") {}
+		if (this.props.readOnly) return;
+		this.props.setFormValue("LLOR", { [ref]: value }, true);
 
 		this.setState({
 			form: {
 				...this.state.form,
 				[ref]: value,
 			},
-			errors: {
-				...this.state.errors,
-				[ref]: error,
-			},
 		});
 	}
 
-	// check for unique values and if correct, register the profile
-	triggerAction() {}
-
 	render() {
-		const verticalSpacer = (spaceRequired) => {
-			return (
-				<Row>
-					<Col>
-						<div style={{ height: `${spaceRequired}px` }}></div>
-					</Col>
-				</Row>
-			);
-		};
-
-		let triggerAction = undefined;
-		if (this.props.activePatientEditable === true) {
-			triggerAction = (
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-								{this.props.isNew ? "Save" : "Update"}
-							</Button>
-						</div>
-					</Col>
-				</Row>
-			);
-		}
-
 		return (
 			<Container style={{ background: "white" }}>
+				{/* Form heading */}
+				<Row>
+					<Toolbar>
+						<Typography variant="h5" id="tableTitle" component="div">
+							{"LLOR Measurement Form"}
+						</Typography>
+					</Toolbar>
+				</Row>
 				{/* 4 fields on top */}
 				<Row>
 					<Col className="col-3">
@@ -453,8 +364,6 @@ class LLORForm extends Component {
 						/>
 					</Col>
 				</Row>
-				{verticalSpacer(10)}
-				<Row>{triggerAction}</Row>
 			</Container>
 		);
 	}

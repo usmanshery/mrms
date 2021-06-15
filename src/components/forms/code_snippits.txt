@@ -1,0 +1,20 @@
+Patient Component callback thing
+
+// this.clearForm = this.clearForm.bind(this);
+
+		// manage behaviour
+		// this.state = {
+		// 	profileFormKey: "x",
+		// };
+
+	// componentDidUpdate(prevState) {
+	// 	this.clearForm();
+	// }
+
+	// // local functions
+	// clearForm() {
+	// 	this.setState({
+	// 		loadData: {},
+	// 		profileFormKey: this.state.profileFormKey === "x" ? "y" : "x",
+	// 	});
+	// }

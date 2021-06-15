@@ -18,12 +18,7 @@ import { Col, Container, Row } from "react-bootstrap";
 import PatientProfileSearchForm from "../forms/PatientProfileSearch";
 import PatientCasesSearchForm from "../forms/PatientCaseSearch";
 
-import {
-	registerPatientAction,
-	patientRegistrationDataBackupAction,
-	removePatientCbAction,
-	searchPatientProfileAction,
-} from "../../store/actions/Patient";
+import { registerPatientAction, removePatientCbAction, searchPatientProfileAction } from "../../store/actions/Patient";
 
 import "../styles/MainComponent.css";
 
@@ -41,7 +36,6 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
 	return {
 		registerPatientProfile: (profile) => dispatch(registerPatientAction(profile)),
-		backupRegData: (backup) => dispatch(patientRegistrationDataBackupAction(backup)),
 		removePatientCallback: (callbackAction) => dispatch(removePatientCbAction(callbackAction)),
 		searchPatientProfile: (profile) => dispatch(searchPatientProfileAction(profile)),
 	};
@@ -81,25 +75,23 @@ class PatientSearchComponent extends Component {
 	// render
 	render() {
 		return (
-			<div className="rootDiv">
-				<Accordion expanded={this.state.accordianExpanded} onChange={this.toggleAccordianExpanded}>
-					<AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel1a-content" id="panel1a-header">
-						<Typography>Search Patients</Typography>
-					</AccordionSummary>
-					<AccordionDetails className="formTopline">
-						<Container fluid>
-							<Row>
-								<Col className="col-6">
-									<PatientProfileSearchForm triggerName={"Search"} triggerCallback={this.performProfileSearch} />
-								</Col>
-								<Col className="col-6">
-									<PatientCasesSearchForm triggerName={"Search"} triggerCallback={this.performCaseSearch} />
-								</Col>
-							</Row>
-						</Container>
-					</AccordionDetails>
-				</Accordion>
-			</div>
+			<Accordion expanded={this.state.accordianExpanded} onChange={this.toggleAccordianExpanded}>
+				<AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel1a-content" id="panel1a-header">
+					<Typography>Search Patients</Typography>
+				</AccordionSummary>
+				<AccordionDetails className="formTopline">
+					<Container fluid>
+						<Row>
+							<Col className="col-6">
+								<PatientProfileSearchForm triggerName={"Search"} triggerCallback={this.performProfileSearch} />
+							</Col>
+							<Col className="col-6">
+								<PatientCasesSearchForm triggerName={"Search"} triggerCallback={this.performCaseSearch} />
+							</Col>
+						</Row>
+					</Container>
+				</AccordionDetails>
+			</Accordion>
 		);
 	}
 }

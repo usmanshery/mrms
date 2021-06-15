@@ -10,6 +10,9 @@ import Sidebar from "./components/navigation/Sidebar";
 
 import MainComponent from "./components/MainComponent";
 
+import LoginModal from "./components/forms/LoginModal";
+import UploadFileModal from "./components/forms/UploadFileModal";
+
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -27,6 +30,10 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 class App extends Component {
+	// constructor(props) {
+	// 	super(props);
+	// }
+
 	componentDidUpdate(prevState) {
 		if (prevState.notifications === this.props.notifications) return;
 		if (this.props.notifications.length === 0) return;
@@ -75,7 +82,7 @@ class App extends Component {
 	render() {
 		return (
 			<>
-				<Navbar />
+				<Navbar login={this.login} />
 				<Sidebar />
 				<ToastContainer
 					position="top-right"
@@ -88,6 +95,8 @@ class App extends Component {
 					draggable
 					pauseOnHover={false}
 				/>
+				<LoginModal/>
+				<UploadFileModal/>
 				<div className="App">
 					<MainComponent />
 				</div>

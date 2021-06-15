@@ -1,14 +1,33 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { TextField, FormControl, Button, FormControlLabel, RadioGroup, Radio, Checkbox } from "@material-ui/core";
-
+import { TextField, FormControlLabel, Checkbox, Toolbar, Typography } from "@material-ui/core";
+import { LLPRFormBooleanFields, defaultLLPRFormValues, defaultLLPRLableValues } from "../../store/misc/formValues";
+import { verticalSpacer } from "../../store/misc/global";
 import { Container, Row, Col } from "react-bootstrap";
 
-import "./FormStyles.css";
+import { navModules } from "../../store/actions/Navigation";
 
-const mapStateToProps = (state) => {
-	return {};
+const mapStateToProps = (state, props) => {
+	// refine behavioral props here
+	let readOnly = props.readOnly === undefined ? false : props.readOnly;
+
+	if (state.activeModule === navModules.patient) {
+		return {
+			readOnly,
+			formValues: state.patientModule.activeCase[state.patientModule.activeCase.category].LLPR,
+		};
+	}
+
+	return {
+		activePatientCaseId: state.patientModule.activePatientCaseId,
+		activePatientData: state.patientModule.activePatientData,
+		activePatientEditable: state.patientModule.activePatientEditable,
+		// if station
+		openCases: state.stationModule.openCases,
+		activeCaseId: state.stationModule.activeCaseId,
+		activeCaseCategory: state.stationModule.activeCaseCategory,
+	};
 };
 
 const mapDispatchToProps = (dispatch) => {
@@ -19,213 +38,51 @@ class LLPRForm extends Component {
 	constructor(props) {
 		super(props);
 
+		let activeCaseData = { ...defaultLLPRFormValues, ...this.props.formValues };
+
+		// clean boolean values
+		for (var key in activeCaseData) {
+			if (activeCaseData.hasOwnProperty(key)) {
+				if (LLPRFormBooleanFields.includes(key)) {
+					activeCaseData[key] = activeCaseData[key] === "true";
+				}
+			}
+		}
+
+		// initialize the state
 		this.state = {
-			form: {
-				repairN: "",
-				repairDate: "",
-				prosthesisN: "",
-				deliveryDate: "",
-
-				hd: false,
-				tt: false,
-				tf: false,
-				ta: false,
-				pf: false,
-				kd: false,
-				pffd: false,
-
-				wornOut: false,
-				forefootBroken: false,
-				soleCrack: false,
-				looseningKeel: false,
-				kneelBroken: false,
-				footNoise: false,
-
-				socketRepair: false,
-				socketReplaced: false,
-				weldingSeamRepair: false,
-				softSocketRepair: false,
-				softSocketReplaced: false,
-
-				strapRepaired: false,
-				strapReplaced: false,
-				strapRepaired8: false,
-				strapReplaced8: false,
-				keelBroken: false,
-				silesianBeltRepaired: false,
-				silesianBeltReplaced: false,
-
-				PPRepair: false,
-				PPReplacement: false,
-				EVARepair: false,
-				EVAReplacement: false,
-
-				ICRC: false,
-				CRE: false,
-				unknown3: false,
-				unknown4: false,
-
-				completeKnee: false,
-				kneeShell: false,
-				kneeAxis: false,
-				kneeAxisBolt: false,
-				kneeLockPP: false,
-				frictionWashers: false,
-				calfPipe: false,
-				securingBoltsM66: false,
-
-				TFSocketCup: false,
-				convexDisc: false,
-				conicalExtensionCup: false,
-				socketCup: false,
-				socketBolt: false,
-				concaveCylinder: false,
-				ankleConvexDisc: false,
-				ankleConcaveDisc: false,
-				ankleBolt: false,
-
-				rivets: false,
-				extensionSupport: false,
-				kickStrap: false,
-				cables: false,
-				spring: false,
-
-				remarks: "",
-			},
-			// errors to show against validation
-			errors: {},
-			profile: props.profile,
+			form: activeCaseData,
 		};
 
 		// labels for inputs
-		this.labels = {
-			repairN: "Repair N°",
-			repairDate: "Repair Date",
-			prosthesisN: "Prosthesis N°",
-			deliveryDate: "Delivery Date",
+		this.labels = { ...defaultLLPRLableValues };
 
-			hd: "HD",
-			tt: "TT",
-			tf: "TF",
-			ta: "TA",
-			pf: "PF",
-			kd: "KD",
-			pffd: "PFFD",
-
-			wornOut: "01 Worn Out",
-			forefootBroken: "02 Forefoot Broken",
-			soleCrack: "03 Sole Crack",
-			looseningKeel: "04 Loosening of Keel",
-			kneelBroken: "05 Keel Broken",
-			footNoise: "06 Foot Noise",
-
-			socketRepair: "01 PP Socket Repair",
-			socketReplaced: "02 PP Socket Replaced",
-			weldingSeamRepair: "03 Welding Seam Repair",
-			softSocketRepair: "04 Soft Socket Repair",
-			softSocketReplaced: "05 Soft Socket Replaced",
-
-			strapRepaired: "01 PTB Strap Repaired",
-			strapReplaced: "02 PTB Strap Replaced",
-			strapRepaired8: "03 8 Strap Repaired",
-			strapReplaced8: "04 8 Strap Replaced",
-			keelBroken: "05 Keel Broken",
-			silesianBeltRepaired: "06 Silesian Belt Repaired",
-			silesianBeltReplaced: "07 Silesian Belt Replaced",
-
-			PPRepair: "01 Repair of PP",
-			PPReplacement: "02 Replacement of PP",
-			EVARepair: "03 Repair of EVA",
-			EVAReplacement: "04 Replacement of EVA",
-
-			ICRC: "01 ICRC",
-			CRE: "02 CRE",
-			unknown3: "03",
-			unknown4: "04",
-
-			completeKnee: "01 Complete Knee",
-			kneeShell: "02 Knee Shell",
-			kneeAxis: "03 Knee Axis",
-			kneeAxisBolt: "04 Knee Axis Bolt",
-			kneeLockPP: "05 Knee Lock PP",
-			frictionWashers: "06 Friction Washers",
-			calfPipe: "07 Calf Pipe",
-			securingBoltsM66: "08 Securing Bolts M6x6",
-
-			TFSocketCup: "01 TF Socket Cup",
-			convexDisc: "02 Convex Disc",
-			conicalExtensionCup: "03 Conical Extension Cup",
-			socketCup: "04 TT Socket Cup",
-			socketBolt: "05 Socket Bolt",
-			concaveCylinder: "06 Concave Cylinder",
-			ankleConvexDisc: "07 Ankle Convex Disc",
-			ankleConcaveDisc: "08 Ankle Concave Disc",
-			ankleBolt: "09 Ankle Bolt",
-
-			rivets: "01 Rivets",
-			extensionSupport: "02 Extension Support",
-			kickStrap: "03 Kick Strap",
-			cables: "04 Cables",
-			spring: "05 Spring",
-
-			remarks: "Remarks",
-		};
-
-		this.triggerAction = this.triggerAction.bind(this);
+		this.setFormValue = this.setFormValue.bind(this);
 	}
 
 	setFormValue(ref, value) {
-		console.log(value);
-		// if (!this.props.activePatientEditable) return;
-		// validate for error
-		let error = false;
-
-		// if required, set following for error validation
-		// if (ref === "<title>") {}
+		if (this.props.readOnly) return;
+		this.props.setFormValue("LLPR", { [ref]: value }, true);
 
 		this.setState({
 			form: {
 				...this.state.form,
 				[ref]: value,
 			},
-			errors: {
-				...this.state.errors,
-				[ref]: error,
-			},
 		});
 	}
 
-	// check for unique values and if correct, register the profile
-	triggerAction() {}
-
 	render() {
-		const verticalSpacer = (spaceRequired) => {
-			return (
-				<Row>
-					<Col>
-						<div style={{ height: `${spaceRequired}px` }}></div>
-					</Col>
-				</Row>
-			);
-		};
-
-		let triggerAction = undefined;
-		if (this.props.activePatientEditable === true) {
-			triggerAction = (
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-								{this.props.isNew ? "Save" : "Update"}
-							</Button>
-						</div>
-					</Col>
-				</Row>
-			);
-		}
-
 		return (
 			<Container style={{ background: "white" }}>
+				{/* Form heading */}
+				<Row>
+					<Toolbar>
+						<Typography variant="h5" id="tableTitle" component="div">
+							{"LLPR Measurement Form"}
+						</Typography>
+					</Toolbar>
+				</Row>
 				{/* 4 fields on top */}
 				<Row>
 					<Col className="col-3">
@@ -820,8 +677,6 @@ class LLPRForm extends Component {
 					</Col>
 				</Row>
 
-				{verticalSpacer(10)}
-				<Row>{triggerAction}</Row>
 			</Container>
 		);
 	}

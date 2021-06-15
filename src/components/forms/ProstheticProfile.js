@@ -1,21 +1,83 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { objFilter } from "../../store/misc/global";
-import { insertCaseAction, updateCaseAction } from "../../store/actions/Patient";
 
-import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
+import { Container, Row, Col, Modal } from "react-bootstrap";
+import { TextField, FormControl, FormHelperText, Button, Toolbar, Typography } from "@material-ui/core";
 import { Autocomplete } from "@material-ui/lab";
 
-import { Container, Row, Col } from "react-bootstrap";
+import { insertCaseAction, updateCaseAction } from "../../store/actions/Patient";
+import {
+	defaultProstheticFormValues,
+	defaultProstheticFormErrors,
+	defaultProstheticFormLabelValues,
+	defaultProfileFormLabelValues,
+} from "../../store/misc/formValues";
+import { rowWrapper, objFilter, validation } from "../../store/misc/global";
+
+import TTPForm from "./MTTP";
+import TFPForm from "./MTFP";
+// import AdviceForm from "./AdviseForm";
+
+import { navModules, toggleModal } from "../../store/actions/Navigation";
+import { stationCaseUpdatedAction } from "../../store/actions/Station";
+import { adminCaseUpdatedAction } from "../../store/actions/Admin";
 
 import "./FormStyles.css";
+import AdviseForm from "./AdviseForm";
+import CaseAttachmentsList from "./CaseAttachmentsList";
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state, props) => {
+	let readOnly = props.readOnly === undefined ? false : props.readOnly;
+	let measurementOnly = props.measurementOnly === undefined ? false : props.measurementOnly;
+	if (state.activeModule === navModules.patient) {
+		let isNew = state.patientModule.newCase === undefined ? false : true;
+		// not new case
+		if (state.patientModule.newCase === undefined) {
+			return {
+				readOnly,
+				measurementOnly,
+				isNew,
+				patientCategory: state.patientModule.activePatientData.category,
+				activeCaseId: state.patientModule.activeCaseId,
+				activeCase: state.patientModule.activeCase.prosthetic,
+				// activePatientId: state.patientModule.activePatientId,
+				// activePatientData: state.patientModule.activePatientData, // enable this if needed
+			};
+		} else {
+			// new case
+			return {
+				readOnly,
+				measurementOnly,
+				isNew,
+				activePatientId: state.patientModule.activePatientId,
+				patientCategory: state.patientModule.activePatientData.category,
+			};
+		}
+	}
+
+	if (state.activeModule === navModules.admin) {
+		return {
+			patientCategory: state.adminModule.activeCase.personalDetails.category,
+			activeCaseId: state.adminModule.activeCase._id,
+			activeCase: state.adminModule.activeCase,
+			// activePatientData: state.patientModule.activePatientData, // enable this if needed
+		};
+	}
+
 	return {
 		activePatientId: state.patientModule.activePatientId,
 		activePatientCaseId: state.patientModule.activePatientCaseId,
 		activePatientData: state.patientModule.activePatientData,
 		activePatientEditable: state.patientModule.activePatientEditable,
+		// station related
+		openCases: state.stationModule.openCases,
+		staff: state.stationModule.staff ? state.stationModule.staff.map((staff) => staff.username) : [],
+		activeStationCaseId: state.stationModule.activeCaseId,
+		activeCaseCategory: state.stationModule.activeCaseCategory,
+		stationName: state.activeModule.toLowerCase(),
+		// admin related
+		pendingCases: state.adminModule.pendingCases,
+		activeAdminCaseId: state.adminModule.activeCaseId,
 	};
 };
 
@@ -23,114 +85,106 @@ const mapDispatchToProps = (dispatch) => {
 	return {
 		insertCase: (patientId, caseDetails) => dispatch(insertCaseAction(patientId, "prosthetic", caseDetails)),
 		updateCase: (caseId, caseDetails) => dispatch(updateCaseAction(caseId, "prosthetic", caseDetails)),
+		updateStationCase: (caseId, caseDetails, station) => dispatch(stationCaseUpdatedAction(caseId, "prosthetic", caseDetails, station)),
+		updateAdminCase: (caseId, approval) => dispatch(adminCaseUpdatedAction(caseId, approval)),
+		toggleUplaodFileModal: () => dispatch(toggleModal("uploadFileModal", true)),
 	};
 };
 
 class ProstheticForm extends Component {
+	/*
+		Props for behavior:
+		- readOnly | bool (false) | if set true, form value change will not be triggered
+		- measurementOnly | bool (false) | if set true, only display the measurement form
+	*/
 	constructor(props) {
 		super(props);
 
-		// if active case exists, fetch its data
-		let activeCaseData = this.props.activePatientData.cases.filter((_case) => _case.orthotic._id === this.props.activePatientCaseId);
-		if (activeCaseData.length === 0) {
-			activeCaseData = undefined;
-		}
-
-		if (activeCaseData !== undefined) {
-			activeCaseData = activeCaseData[0].orthotic;
-		}
-
-		this.state = {
-			form: {
-				// Row
-				onsetDate: this.props.isNew ? undefined : activeCaseData.onsetDate,
-				onsetPlace: this.props.isNew ? "" : activeCaseData.onsetPlace,
-				area: this.props.isNew ? "" : activeCaseData.area,
-				cause: this.props.isNew ? "" : activeCaseData.cause,
-				diagnosis_disability: this.props.isNew ? "" : activeCaseData.diagnosis_disability,
-				disabilityDetail: this.props.isNew ? "" : activeCaseData.disabilityDetail,
-				amputationLevel: this.props.isNew ? "" : activeCaseData.amputationLevel,
-				amputationType: this.props.isNew ? "" : activeCaseData.amputationType,
-				side: this.props.isNew ? [] : activeCaseData.side,
-				prescription: this.props.isNew ? "" : activeCaseData.prescription,
-				componentsDetail: this.props.isNew ? "" : activeCaseData.componentsDetail,
-				socketType: this.props.isNew ? "" : activeCaseData.socketType,
-				footType: this.props.isNew ? "" : activeCaseData.footType,
-				linnerType: this.props.isNew ? "" : activeCaseData.linnerType,
-				kneeJointType: this.props.isNew ? "" : activeCaseData.kneeJointType,
-				modilityGrade: this.props.isNew ? "" : activeCaseData.modilityGrade,
-				kClassification: this.props.isNew ? "" : activeCaseData.kClassification,
-			},
-			// errors to show against validation
-			errors: {
-				onsetDate: false,
-				onsetPlace: false,
-				area: false,
-				cause: false,
-				diagnosis_disability: false,
-				disabilityDetail: false,
-				amputationLevel: false,
-				amputationType: false,
-				side: false,
-				prescription: false,
-				componentsDetail: false,
-				socketType: false,
-				footType: false,
-				linnerType: false,
-				kneeJointType: false,
-				modilityGrade: false,
-				kClassification: false,
-			},
-			profile: props.profile,
-		};
-
-		// labels for inputs
-		this.labels = {
-			onsetDate: "Date of Onset",
-			onsetPlace: "Place of Onset",
-
-			area: "Area",
-			areaOptions: ["Operation", "Peace"],
-
-			cause: "Cause",
-			diagnosis_disability: "Diagnosis/ Disability",
-
-			disabilityDetail: "Detail of Disability",
-			amputationLevel: "Level of Amputation",
-
-			amputationType: "Type of Amputation",
-
-			side: "Side",
-			sideOptions: ["Bilateral", "Left", "Right"],
-
-			prescription: "Prescription",
-			componentsDetail: "Detail of Components",
-
-			socketType: "Socket Type",
-			footType: "Foot Type",
-
-			linnerType: "Linner Type",
-			kneeJointType: "Knee Joint Type",
-
-			modilityGrade: "Modility Grade",
-			kClassification: "K-Classification",
-		};
+		/*
+			 prosthetic profile is made up of following components:
+			 - Case Attachments (independent component)
+			 - Advise Form (optional, dependent component)
+			 - Case Level Details (local fields)
+			 - Measurement Form (dependent component)
+		*/
 
 		this.triggerAction = this.triggerAction.bind(this);
+		this.setFormValue = this.setFormValue.bind(this);
+		this.loadValues = this.loadValues.bind(this);
+		this.togglePopups = this.togglePopups.bind(this);
+
+		// labels for inputs
+		this.labels = { ...defaultProstheticFormLabelValues };
+		this.state = this.loadValues();
 	}
 
-	setFormValue(ref, value) {
-		if (!this.props.activePatientEditable) return;
-		// validate for error
-		let error = false;
+	componentDidUpdate(prevState) {
+		// make it componentDidReceiveProps like
+		if (
+			prevState.isNew === this.props.isNew ||
+			(prevState.activeCaseId === this.props.activeCaseId && prevState.activeCaseId === this.props.activeStationCaseId)
+		)
+			return;
+		this.setState(this.loadValues());
+	}
 
-		// if required, set following for error validation
-		// if (ref === "<title>") {}
+	// loads form and error values from DB or defaults
+	loadValues() {
+		let activeCaseData;
+
+		// New
+		if (this.props.isNew) {
+			activeCaseData = { ...defaultProstheticFormValues };
+		} 
+		// Station ?
+		else if (this.props.station) {
+			activeCaseData = this.props.openCases.prosthetic.filter((_case) => _case._id === this.props.activeStationCaseId)[0];
+			activeCaseData = { ...defaultProstheticFormValues, ...activeCaseData };
+		} 
+		// Admin or Patient
+		else {
+			activeCaseData = { ...defaultProstheticFormValues, ...this.props.activeCase };
+		}
+		return {
+			form: activeCaseData,
+			staffDetailsPopup: false,
+			// errors to show against validation
+			errors: { ...defaultProstheticFormErrors },
+		};
+	}
+
+	setFormValue(ref, value, spread = false) {
+		if (this.readOnly) return;
+
+		let error = false;
+		if (this.props.station) {
+			if (ref === "amputationType") {
+				if (validation.isNull(value)) error = "Amputation Type Must Be Selected";
+			}
+			if (ref === "staffUsername") {
+				if (validation.isNull(value)) error = "Staff Username is Required";
+			}
+			if (ref === "staffPassword") {
+				if (validation.isNull(value)) error = "Staff Password is Required";
+			}
+			// } else if (this.props.admin) {
+		} else {
+			// validate for error
+			// if required, set following for error validation
+			if (ref === "amputationType") {
+				if (validation.isNull(value)) error = "Amputation Type Must Be Selected";
+			}
+		}
 
 		this.setState({
 			form: {
 				...this.state.form,
-				[ref]: value,
+				[ref]: !spread
+					? value
+					: {
+							...this.state.form[ref],
+							...value,
+					  },
 			},
 			errors: {
 				...this.state.errors,
@@ -144,43 +198,123 @@ class ProstheticForm extends Component {
 		Object.filter = objFilter;
 		if (Object.keys(Object.filter(this.state.errors, (key, value) => value !== false)).length > 0) {
 			console.log("Skipping submission due to errors");
+			console.log("The state: ", this.state.errors);
+			return;
+		}
+
+		// if missing any required values
+		let requiredFields;
+		if (this.props.station) {
+			requiredFields = ["amputationType", "staffUsername", "staffPassword"];
+		} else {
+			requiredFields = ["amputationType"];
+		}
+
+		let flaggedKeys = Object.keys(
+			Object.filter(this.state.form, (key, value) => requiredFields.includes(key) && (value === undefined || value === null || value === ""))
+		);
+		// highlite errors for these
+		if (flaggedKeys.length > 0) {
+			let updatedErrors = {};
+			flaggedKeys.forEach((key) => {
+				updatedErrors[key] = "This field is required";
+			});
+			this.setState({
+				errors: {
+					...this.state.errors,
+					...updatedErrors,
+				},
+			});
 			return;
 		}
 
 		if (this.props.isNew) {
 			// register it as new case, add patient id with the case
-			// prepare data
-			let formData = this.state.form;
-			// post data
+			let formData = {
+				...this.state.form,
+				patientCategory: this.props.patientCategory,
+				[this.state.form.amputationType]: {},
+				adviseForm:
+					this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[0] ||
+					this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[1]
+						? {}
+						: undefined,
+			};
 			this.props.insertCase(this.props.activePatientId, formData);
+		} else if (this.props.station) {
+			// dispatch update with case id and updated details
+			let formData = this.state.form;
+			this.props.updateStationCase(this.props.activeStationCaseId, formData, this.props.stationName);
+			this.togglePopups("staffDetailsPopup");
+		} else if (this.props.admin) {
+			// dispatch update with case id and updated details
+			// this.props.updateAdminCase(this.props.activeAdminCaseId, param);
 		} else {
 			// dispatch update with case id and updated details
-			// prepare data
 			let formData = this.state.form;
-			// post data
-			this.props.updateCase(this.props.activePatientCaseId, formData);
+			this.props.updateCase(this.props.activeCaseId, formData);
 			// further if update was successful, merge the details with the case data
 		}
 	}
 
+	// models
+	togglePopups(popupId, toggleValue) {
+		this.setState({
+			[popupId]: toggleValue ? toggleValue : !this.state[popupId],
+		});
+	}
+
 	render() {
+		let measurementForm = undefined;
+		let attachmentComponent = undefined;
+		let adviseFormComponent = undefined;
 		let triggerAction = undefined;
-		if (this.props.activePatientEditable === true) {
-			triggerAction = (
-				<Row>
-					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-								{this.props.isNew ? "Save" : "Update"}
-							</Button>
-						</div>
-					</Col>
-				</Row>
-			);
+
+		// add measurement form
+		if (!this.props.isNew) {
+			const formType = this.state.form.amputationType;
+			if (formType === "TTP") {
+				measurementForm = rowWrapper(
+					<TTPForm
+						// triggerAction={
+						// 	this.props.station ? () => this.togglePopups("staffDetailsPopup") : this.props.admin ? (approval) => this.triggerAction(approval) : this.triggerAction
+						// }
+						// station={this.props.station}
+						// admin={this.props.admin}
+						setFormValue={this.setFormValue}
+						readOnly={this.readOnly}
+					/>,
+					true
+				);
+			}
+			if (formType === "TFP") {
+				measurementForm = rowWrapper(<TFPForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+			}
+
+			// finish here if only measurement form is to be displayed
+			if (this.measurementOnly) {
+				return <Container>{measurementForm}</Container>;
+			}
+
+			attachmentComponent = rowWrapper(<CaseAttachmentsList readOnly={this.readOnly} />, true);
+			if (
+				this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[0] ||
+				this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[1]
+			) {
+				adviseFormComponent = rowWrapper(<AdviseForm setFormValue={this.setFormValue} />, true);
+			}
 		}
 
-		return (
+		let caseFields = rowWrapper(
 			<Container>
+				{/* Individual Heading */}
+				<Row>
+					<Toolbar>
+						<Typography variant="h5" id="tableTitle" component="div">
+							{"Case Overview"}
+						</Typography>
+					</Toolbar>
+				</Row>
 				{/* Onset Date, Onset Place, Operational/Peace Area */}
 				<Row>
 					{/* Onset Date */}
@@ -219,6 +353,7 @@ class ProstheticForm extends Component {
 								onChange={(event, value) => this.setFormValue("area", value)}
 								options={this.labels.areaOptions}
 								renderInput={(params) => <TextField {...params} label={this.labels.area} variant="standard" />}
+								value={this.state.form.area}
 							/>
 							<FormHelperText>{this.state.errors.area}</FormHelperText>
 						</FormControl>
@@ -287,12 +422,11 @@ class ProstheticForm extends Component {
 					{/* Amputation Type */}
 					<Col className="col-6">
 						<FormControl error={this.state.errors.amputationType !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.amputationType}
+							<Autocomplete
+								onChange={(event, value) => this.setFormValue("amputationType", value)}
+								options={this.labels.amputationTypeOptions}
 								value={this.state.form.amputationType}
-								onChange={(event) => this.setFormValue("amputationType", event.target.value)}
-								variant="standard"
+								renderInput={(params) => <TextField {...params} label={this.labels.amputationType} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.amputationType}</FormHelperText>
 						</FormControl>
@@ -304,6 +438,7 @@ class ProstheticForm extends Component {
 								multiple
 								onChange={(event, value) => this.setFormValue("side", value)}
 								options={this.labels.sideOptions}
+								value={this.state.form.side}
 								renderInput={(params) => <TextField {...params} label={this.labels.side} variant="standard" />}
 							/>
 							<FormHelperText>{this.state.errors.side}</FormHelperText>
@@ -426,10 +561,74 @@ class ProstheticForm extends Component {
 						</FormControl>
 					</Col>
 				</Row>
-				{/* Button for saving/updating */}
-				{triggerAction}
+			</Container>,
+			true
+		);
+
+		// trigger action
+		triggerAction = (
+			<Container>
+				<Row>
+					<Col className="col-3 offset-9">
+						<div className="form-submit-button">
+							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+								{this.props.isNew ? "Register Case" : "Update"}
+							</Button>
+						</div>
+					</Col>
+				</Row>
 			</Container>
 		);
+
+		// user data popup
+		const userCredentialsPopup = (
+			<Modal show={this.state.staffDetailsPopup} onHide={() => this.togglePopups("staffDetailsPopup")}>
+				<Modal.Header closeButton>
+					<Modal.Title>Enter Your Credentials</Modal.Title>
+				</Modal.Header>
+				<Modal.Body>
+					<FormControl error={this.state.errors.staffUsername !== false} variant="standard" fullWidth>
+						<Autocomplete
+							onChange={(event, value) => this.setFormValue("staffUsername", value)}
+							options={this.props.staff}
+							value={this.state.form.staffUsername}
+							renderInput={(params) => <TextField {...params} label={this.labels.staffUsername} variant="standard" />}
+						/>
+						<FormHelperText>{this.state.errors.staffUsername}</FormHelperText>
+					</FormControl>
+					<FormControl error={this.state.errors.staffPassword !== false} variant="standard" fullWidth>
+						<TextField
+							margin="none"
+							type="password"
+							label={this.labels.staffPassword}
+							value={this.state.form.staffPassword}
+							onChange={(event) => this.setFormValue("staffPassword", event.target.value)}
+							variant="standard"
+						/>
+						<FormHelperText>{this.state.errors.staffPassword}</FormHelperText>
+					</FormControl>
+					<div>
+						{/* style={{ float: "right", padding: "10px 20px 10px 20px" }} */}
+						<Button variant="contained" color="primary" style={{ float: "right" }} onClick={this.triggerAction}>
+							{"Send"}
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
+		);
+
+		// return accordian with container rows for individual sub-components
+		let content = (
+			<Container>
+				{adviseFormComponent}
+				{attachmentComponent}
+				{caseFields}
+				{measurementForm}
+				{triggerAction}
+				{userCredentialsPopup}
+			</Container>
+		);
+		return content;
 	}
 }
 

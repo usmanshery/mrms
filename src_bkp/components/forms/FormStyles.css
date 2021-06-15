@@ -1,0 +1,18 @@
+.fullWidth {
+	width: 100%;
+}
+.greenBackground {
+	background: lightgreen;
+}
+
+.form-submit-button {
+	height: 100%;
+	display: flex;
+	align-items: center;
+	flex-direction: row-reverse;
+}
+
+.checkboxSection {
+	display: flex;
+	height: 25px;
+}

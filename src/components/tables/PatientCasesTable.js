@@ -19,10 +19,27 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Switch from "@material-ui/core/Switch";
 
 import { editCaseAction } from "../../store/actions/Patient";
+import { caseStageFinderAuto } from "../../store/misc/global"; //accordianWrapper
 
 import "../styles/Table.css";
+import { navModules } from "../../store/actions/Navigation";
 
 const mapStateToProps = (state) => {
+	if (state.activeModule === navModules.patientModule) {
+		return {
+			activePatientId: state.patientModule.activePatientId,
+			activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
+		};
+	}
+	// if (state.activeModule === navModules.admin) {
+	// 	return {
+	// 		activePatientId: state.patientModule.activePatientId,
+	// 		activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
+	// 	};
+		
+	// }
+
+	// remove it
 	return {
 		activePatientId: state.patientModule.activePatientId,
 		activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
@@ -42,6 +59,7 @@ class PatientCasesTable extends Component {
 		const headCells = [
 			{ id: "id", align: "left", disablePadding: false, label: "Patient ID" },
 			{ id: "category", align: "left", disablePadding: false, label: "Case Category" },
+			{ id: "status", align: "left", disablePadding: false, label: "Case Status" },
 			{ id: "action", align: "center", disablePadding: false, label: "Actions" },
 		];
 
@@ -64,6 +82,7 @@ class PatientCasesTable extends Component {
 				let { category } = _case;
 				return {
 					id: _case[category]._id,
+					status: caseStageFinderAuto(_case, category), // _case[category].casting ? (_case[category].modification ? "Finished" : "Pending Modification") : "Pending Casting",
 					category,
 				};
 			});
@@ -79,6 +98,28 @@ class PatientCasesTable extends Component {
 			rowsPerPage: 5,
 			dataRows,
 		};
+	}
+
+	componentDidUpdate(prevState) {
+		// make it componentDidReceiveProps like
+		if (prevState.activePatientData.cases.length === this.props.activePatientData.cases.length) return;
+
+		let dataRows = [];
+
+		if (this.props.activePatientData.cases.length > 0) {
+			// on new results:
+			dataRows = this.props.activePatientData.cases.map((_case) => {
+				let { category } = _case;
+				return {
+					id: _case[category]._id,
+					status: caseStageFinderAuto(_case, category),
+					category,
+				};
+			});
+		}
+		this.setState({
+			dataRows,
+		});
 	}
 
 	// table helper functions
@@ -157,25 +198,25 @@ class PatientCasesTable extends Component {
 		let dataRows = this.state.dataRows;
 
 		if (dataRows.length === 0) {
-			return (
-				<Container style={{ padding: "0px" }}>
+			let content = (
+				//style={{ padding: "0px" }}
+				<Container>
 					<Row>
 						<Col>
 							<Toolbar>
-								<Typography variant="h6" id="tableTitle" component="div">
-									No Cases Found
-								</Typography>
+								<Typography variant="h6">No Cases Found</Typography>
 							</Toolbar>
 						</Col>
 					</Row>
 				</Container>
 			);
+			return content;
 		}
 
 		const emptyRows = rowsPerPage - Math.min(rowsPerPage, dataRows.length - page * rowsPerPage);
 
-		return (
-			<Container style={{ padding: "0px" }}>
+		let content = (
+			<Container>
 				<Paper style={{ boxShadow: "none" }}>
 					<TableContainer>
 						<Table aria-labelledby="tableTitle" size={dense ? "small" : "medium"} aria-label="enhanced table">
@@ -206,7 +247,6 @@ class PatientCasesTable extends Component {
 									.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 									.map((row, index) => {
 										const labelId = `enhanced-table-checkbox-${index}`;
-
 										return (
 											<TableRow hover onClick={() => this.handleClick(row.id)} aria-checked={row.id === selected} tabIndex={-1} key={row.id} selected={row.id === selected}>
 												<TableCell component="th" id={labelId} scope="row">
@@ -214,6 +254,9 @@ class PatientCasesTable extends Component {
 												</TableCell>
 												<TableCell component="th" id={labelId} scope="row">
 													{row.category}
+												</TableCell>
+												<TableCell component="th" id={labelId} scope="row">
+													{row.status}
 												</TableCell>
 												<TableCell align="right">
 													<Button variant="contained" color="secondary" onClick={() => this.editCase(row)}>
@@ -244,6 +287,8 @@ class PatientCasesTable extends Component {
 				<FormControlLabel control={<Switch checked={dense} onChange={this.handleChangeDense} />} label="Compact Table" />
 			</Container>
 		);
+
+		return content;
 	}
 }
 

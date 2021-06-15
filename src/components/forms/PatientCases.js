@@ -1,9 +1,18 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { newCaseAction } from "../../store/actions/Patient";
-// import { cities, objFilter } from "../../store/session";
+import { accordianWrapper } from "../../store/misc/global";
 
-import { Select, MenuItem, InputLabel, FormControl, FormHelperText, Button, Toolbar, Typography } from "@material-ui/core";
+import {
+	Select,
+	MenuItem,
+	InputLabel,
+	FormControl,
+	FormHelperText,
+	Button,
+	Toolbar,
+	Typography,
+} from "@material-ui/core";
 import { Container, Row, Col } from "react-bootstrap";
 
 import OrthoticForm from "../forms/OrthoticProfile";
@@ -89,56 +98,115 @@ class PatientCasesForm extends Component {
 	}
 
 	render() {
-		// const triggerElement =
-		// 	this.trigger && !this.state.readOnly ? (
-		// 		<Row>
-		// 			<Col className="col-2 offset-7">
-		// 				<Button variant="contained" color="secondary" onClick={() => this.clearForm()}>
-		// 					Clear Data
-		// 				</Button>
-		// 			</Col>
-		// 			<Col className="col-3 ">{this.trigger}</Col>
-		// 		</Row>
-		// 	) : undefined;
-
-		let caseFormHeading = undefined;
 		let caseForm = undefined;
 		if (this.props.activePatientNewCase) {
 			if (this.props.activePatientNewCase === "prosthetic") {
-				caseForm = <ProstheticForm isNew />;
-				caseFormHeading = "Prosthetic Case (New)";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Prosthetic Case (New)"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<ProstheticForm isNew patientCategory={this.props.activePatientData.category} />
+						</Row>
+					</>
+				);
 			}
 			if (this.props.activePatientNewCase === "orthotic") {
-				caseForm = <OrthoticForm isNew />;
-				caseFormHeading = "Orthotic Case (New)";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Orthotic Case (New)"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<OrthoticForm isNew />
+						</Row>
+					</>
+				);
 			}
 			if (this.props.activePatientNewCase === "mechanical") {
-				// caseForm = <OrthoticForm isNew/>;
-				caseForm = <h1>Mechanical one</h1>;
-				caseFormHeading = "Mechanical Case (New)";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Mechanical Case (New)"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<h1>Mechanical one</h1>
+						</Row>
+					</>
+				);
 			}
 		}
 
 		if (this.props.activePatientCaseId) {
 			// get active case category
-			let activeCaseCategory = this.props.activePatientData.cases.filter((_case) => _case[_case.category]._id === this.props.activePatientCaseId)[0]
-				.category;
+			// console.log(this.props.activePatientCaseId);
+			let activeCaseCategory = this.props.activePatientData.cases.filter(
+				(_case) => _case[_case.category] && _case[_case.category]._id === this.props.activePatientCaseId
+			)[0].category;
 			if (activeCaseCategory === "prosthetic") {
-				caseForm = <ProstheticForm />;
-				caseFormHeading = "Prosthetic Case [" + this.props.activePatientCaseId + "]";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Prosthetic Case [" + this.props.activePatientCaseId + "]"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<ProstheticForm />
+						</Row>
+					</>
+				);
 			}
 			if (activeCaseCategory === "orthotic") {
-				caseForm = <OrthoticForm />;
-				caseFormHeading = "Orthotic Case [" + this.props.activePatientCaseId + "]";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Orthotic Case [" + this.props.activePatientCaseId + "]"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<OrthoticForm />
+						</Row>
+					</>
+				);
 			}
 			if (activeCaseCategory === "mechanical") {
-				// caseForm = <OrthoticForm isNew/>;
-				caseForm = <h1>Mechanical one</h1>;
-				caseFormHeading = "Mechanical Case [" + this.props.activePatientCaseId + "]";
+				caseForm = (
+					<>
+						<Row>
+							<Toolbar>
+								<Typography variant="h5" id="tableTitle" component="div">
+									{"Mechanical Case [" + this.props.activePatientCaseId + "]"}
+								</Typography>
+							</Toolbar>
+						</Row>
+						<Row>
+							<h1>Mechanical one</h1>
+						</Row>
+					</>
+				);
 			}
 		}
 
-		return (
+		let content = (
 			<Container>
 				{/* First row, show title, add new etc */}
 				<Row>
@@ -174,28 +242,11 @@ class PatientCasesForm extends Component {
 					<hr style={{ width: "100%" }} />
 				</Row>
 				{/* Show active or new case */}
-				<Row>
-					<Toolbar>
-						<Typography variant="h5" id="tableTitle" component="div">
-							{caseFormHeading}
-						</Typography>
-					</Toolbar>
-				</Row>
-				<Row>{caseForm}</Row>
+				{caseForm}
 			</Container>
-			/*
-				Fields:
-					name
-					father name
-					contact
-					age
-					sex
-					address (by parts, address, city (concatinated with province))
-				
-				Setup other needed fields:
-					
-			*/
 		);
+
+		return accordianWrapper("Patient Cases", content);
 	}
 }
 

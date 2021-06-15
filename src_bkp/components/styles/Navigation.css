@@ -1,0 +1,26 @@
+#navbarLinksContainer {
+	margin-bottom: 5px;
+	margin-left: 15px;
+}
+
+#navbarLinksContainer button {
+	margin-left: 10px;
+}
+
+.noselect {
+	-webkit-touch-callout: none; /* iOS Safari */
+	-webkit-user-select: none; /* Safari */
+	-khtml-user-select: none; /* Konqueror HTML */
+	-moz-user-select: none; /* Old versions of Firefox */
+	-ms-user-select: none; /* Internet Explorer/Edge */
+	user-select: none; /* Non-prefixed version, currently
+									supported by Chrome, Edge, Opera and Firefox */
+}
+
+#selectedlink {
+	background-color: rgba(128, 128, 128, 0.5);
+}
+
+.disabledLink {
+	text-decoration: line-through;
+}

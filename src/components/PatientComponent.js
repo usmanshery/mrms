@@ -1,36 +1,25 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { Container, Row } from "react-bootstrap";
-
-import Accordion from "@material-ui/core/Accordion";
-import AccordionSummary from "@material-ui/core/AccordionSummary";
-import AccordionDetails from "@material-ui/core/AccordionDetails";
-import Typography from "@material-ui/core/Typography";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import { Col, Container, Row } from "react-bootstrap";
 
 import PatientForm from "./forms/PatientProfile";
-import PatientCasesForm from "./forms/PatientCases";
-import ULO2Form from "./forms/MULO2";
+import PatientCasesList from "./forms/PatientCasesList";
+
+// import ULO2Form from "./forms/MULO2";
+import AdviceForm from "./forms/AdviseForm";
 
 import PatientSearchComponent from "./patient/PatientSearchComponent";
-// import OrthoticForm from "./forms/OrthoticProfile";
-// import ProstheticForm from "./forms/ProstheticProfile";
+import PatientCaseDetailForm from "./forms/PatientCaseDetail";
 import PatientProfilesTable from "./tables/PatientProfileTable";
 
 // import { objFilter } from "../store/session";
 import { patientModuleActions } from "../store/actions/Patient";
 
-import {
-	registerPatientAction,
-	patientRegistrationDataBackupAction,
-	removePatientCbAction,
-	patientModuleNotifications,
-	searchPatientProfileAction,
-} from "../store/actions/Patient";
-
 import { patientPages } from "../store/actions/Navigation";
 import "./styles/MainComponent.css";
+import { withStyles } from "@material-ui/core";
+import { accordianWrapper, rowWrapper } from "../store/misc/global";
 
 const mapStateToProps = (state) => {
 	return {
@@ -44,13 +33,12 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => {
-	return {
-		registerPatientProfile: (profile) => dispatch(registerPatientAction(profile)),
-		backupRegData: (backup) => dispatch(patientRegistrationDataBackupAction(backup)),
-		removePatientCallback: (callbackAction) => dispatch(removePatientCbAction(callbackAction)),
-		searchPatientProfile: (profile) => dispatch(searchPatientProfileAction(profile)),
-	};
+	return {};
 };
+
+const customStyles = (theme) => ({
+	bottomMargin: { marginBottom: "10px" },
+});
 
 class PatientComponent extends Component {
 	constructor(props) {
@@ -61,178 +49,104 @@ class PatientComponent extends Component {
 		this.getSearch = this.getSearch.bind(this);
 
 		this.getTestForm = this.getTestForm.bind(this);
-
-		this.clearForm = this.clearForm.bind(this);
-
-		// manage behaviour
-		let editing = true; // by default all fields can be edited
-		// let loadData = {};
-		let loadData = {
-			name: "Shery",
-			fathername: "Shery's Father",
-			sex: "Male",
-			age: 27,
-			phone: "03046468474",
-			address: "Pinid yo",
-			city: "Rawalpindi, Punjab",
-		};
-
-		if (this.props.activePage === patientPages.view) {
-			editing = false;
-		}
-
-		if (this.props.activePage === patientPages.add) {
-			if (this.props.newPatientData) {
-				loadData.name = this.props.newPatientData.name;
-				loadData.fathername = this.props.newPatientData.fathername;
-				loadData.sex = this.props.newPatientData.sex;
-				loadData.age = this.props.newPatientData.age;
-				loadData.phone = this.props.newPatientData.phone;
-				loadData.rank = this.props.newPatientData.rank;
-				loadData.armynumber = this.props.newPatientData.armynumber;
-				loadData.unit = this.props.newPatientData.unit;
-				loadData.address = this.props.newPatientData.address;
-				loadData.city = this.props.newPatientData.city;
-			}
-		} else {
-			if (this.props.activePatientId) {
-				loadData.name = this.props.activePatientData.name;
-				loadData.fathername = this.props.activePatientData.fathername;
-				loadData.sex = this.props.activePatientData.sex;
-				loadData.age = this.props.activePatientData.age;
-				loadData.phone = this.props.activePatientData.phone;
-				loadData.rank = this.props.activePatientData.rank;
-				loadData.armynumber = this.props.activePatientData.armynumber;
-				loadData.unit = this.props.activePatientData.unit;
-				loadData.address = this.props.activePatientData.address;
-				loadData.city = this.props.activePatientData.city;
-			}
-		}
-
-		this.state = {
-			editing,
-			loadData,
-			profileFormKey: "x",
-		};
 	}
 
-	componentDidUpdate(prevState) {
-		// make it componentDidReceiveProps like
-		if (prevState.callbackActions === this.props.callbackActions) return;
-
-		if (this.props.callbackActions.includes(patientModuleNotifications.regSuccess)) {
-			this.props.removePatientCallback(patientModuleNotifications.regSuccess);
-			this.clearForm();
-		}
-		if (this.props.callbackActions.includes(patientModuleNotifications.regFailure)) {
-			this.props.removePatientCallback(patientModuleNotifications.regFailure);
-		}
-	}
-
-	// local functions
-	clearForm() {
-		this.setState({
-			loadData: {},
-			profileFormKey: this.state.profileFormKey === "x" ? "y" : "x",
-		});
-	}
-
-	// jsx functions
 	getAddProfile() {
+		let title = "Add New Patient";
+		let content = (
+			<PatientForm
+				action={patientModuleActions.regNew}
+				triggerName={this.props.activePage === patientPages.add ? "Register Patient" : "Update Profile"}
+				triggerCallback={this.registerNewPatient}
+			/>
+		);
 		return (
-			<Accordion expanded>
-				<AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel1a-content" id="panel1a-header">
-					<Typography>Add New Patient</Typography>
-				</AccordionSummary>
-				<AccordionDetails className="formTopline">
-					<PatientForm
-						key={this.state.profileFormKey}
-						action={patientModuleActions.regNew}
-						// loadData={this.state.loadData}
-						triggerName={this.props.activePage === patientPages.add ? "Register Patient" : "Update Profile"}
-						triggerCallback={this.registerNewPatient}
-					/>
-				</AccordionDetails>
-			</Accordion>
+			<Row>
+				<Col> {accordianWrapper(title, content)}</Col>
+			</Row>
 		);
 	}
 
 	getProfileView(title, readOnly = false) {
+		if (!this.props.activePatientId) {
+			return <h1>No Patient Selected</h1>;
+		}
+		/*
+			 patient detail is made up of following components:
+			 - Personal Detail Component (independent component)
+			 - Cases List (independent component)
+			 - Case Component (complete and independent component)
+		*/
+
 		return (
-			<Accordion expanded>
-				<AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel1a-content" id="panel1a-header">
-					<Typography>{title}</Typography>
-				</AccordionSummary>
-				<AccordionDetails className="formTopline">
-					<Container fluid>
-						{/* profile details */}
-						<Row>
-							<PatientForm
-								title={"Personal Details"}
-								key={this.state.profileFormKey}
-								action={readOnly ? patientModuleActions.viewOnly : patientModuleActions.updateExisting}
-								readOnly={readOnly}
-							/>
-						</Row>
-						<Row>
-							<hr style={{ width: "100%" }} />
-						</Row>
-						{/* cases */}
-						<Row>
-							<PatientCasesForm />
-						</Row>
-					</Container>
-				</AccordionDetails>
-			</Accordion>
+			<>
+				{/* Patient Personal Detail Component */}
+				{rowWrapper(<PatientForm readOnly={readOnly} action={readOnly ? patientModuleActions.viewOnly : patientModuleActions.updateExisting} />)}
+				{/* Cases List Component */}
+				{rowWrapper(<PatientCasesList readOnly={readOnly} />)}
+				{/* Case Component (Active Case) */}
+				{rowWrapper(<PatientCaseDetailForm readOnly={readOnly} />)}
+			</>
 		);
 	}
 
 	getSearch() {
 		return (
 			<>
-				<PatientSearchComponent />
-				<PatientProfilesTable />
+				<Row>
+					<Col>
+						<PatientSearchComponent />
+					</Col>
+				</Row>
+				<Row>
+					<Col>
+						<PatientProfilesTable />
+					</Col>
+				</Row>
 			</>
 		);
 	}
 
 	getTestForm() {
-		return <ULO2Form />;
+		// return <h1>Empty</h1>;
+		return <AdviceForm />;
 	}
 
 	// render
 	render() {
 		let component = <></>;
+
+		// Search component
 		if (this.props.activePage && this.props.activePage === patientPages.search) {
 			component = this.getSearch();
 		}
 
+		// New Patient Register
 		if (this.props.activePage && this.props.activePage === patientPages.add) {
 			component = this.getAddProfile();
 		}
 
+		// View Patient Details
 		if (this.props.activePage && this.props.activePage === patientPages.view) {
-			if (!this.props.activePatientId) {
-				component = <h1>No Patient Selected</h1>;
-			} else {
-				component = this.getProfileView("View Patient Profile", true);
-			}
+			component = this.getProfileView("View Patient Profile", true);
 		}
 
+		// Update Patient Details
 		if (this.props.activePage && this.props.activePage === patientPages.update) {
-			if (!this.props.activePatientId) {
-				component = <h1>No Patient Selected</h1>;
-			} else {
-				component = this.getProfileView("Update Patient Profile");
-			}
+			component = this.getProfileView("Update Patient Profile");
 		}
 
+		// Test Component
 		if (this.props.activePage && this.props.activePage === patientPages.test) {
 			component = this.getTestForm();
 		}
 
-		return <div className="rootDiv">{component}</div>;
+		return (
+			<div className="rootDiv">
+				<Container fluid>{component}</Container>
+			</div>
+		);
 	}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(PatientComponent);
+export default connect(mapStateToProps, mapDispatchToProps)(withStyles(customStyles)(PatientComponent));
