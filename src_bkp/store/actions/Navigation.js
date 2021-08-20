@@ -10,7 +10,6 @@ export const patientPages = {
 	search: "Search Patients",
 	view: "View Patient Details", // all but read-only
 	update: "Update Patient Details",
-	test: "Testing New Forms",
 };
 
 export const changeActiveModule = (module) => onModuleSelect({ module });

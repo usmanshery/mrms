@@ -50,6 +50,7 @@ class StationCasesTable extends Component {
 			{ id: "action", align: "center", disablePadding: false, label: "Actions" },
 		];
 
+		this.loadValues = this.loadValues.bind(this);
 		this.stableSort = this.stableSort.bind(this);
 		this.getComparator = this.getComparator.bind(this);
 		this.handleClick = this.handleClick.bind(this);
@@ -60,6 +61,29 @@ class StationCasesTable extends Component {
 		this.descendingComparator = this.descendingComparator.bind(this);
 		this.editCase = this.editCase.bind(this);
 
+		this.state = {
+			headCells,
+			order: "asc",
+			orderBy: "date",
+			selected: undefined,
+			page: 0,
+			dense: true,
+			rowsPerPage: 10,
+			dataRows: this.loadValues(),
+		};
+	}
+
+	componentDidUpdate(prevState) {
+		// make it componentDidReceiveProps like
+		if (prevState.openCases === undefined && this.props.openCases === undefined) return;
+		if (JSON.stringify(prevState.openCases) === JSON.stringify(this.props.openCases)) return;
+
+		this.setState({
+			dataRows: this.loadValues(),
+		});
+	}
+
+	loadValues() {
 		let dataRows = [];
 
 		if (this.props.openCases) {
@@ -97,7 +121,7 @@ class StationCasesTable extends Component {
 				// on new results:
 				dataRows = [
 					...this.props.openCases.prosthetic
-					.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.modification)
+						.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.modification)
 						.map((_case) => {
 							// extract date from id here
 							let date = new Date(parseInt(_case._id.substring(0, 8), 16) * 1000);
@@ -123,33 +147,11 @@ class StationCasesTable extends Component {
 						}),
 				];
 			}
-		}
-
-		this.state = {
-			headCells,
-			order: "asc",
-			orderBy: "date",
-			selected: undefined,
-			page: 0,
-			dense: true,
-			rowsPerPage: 10,
-			dataRows,
-		};
-	}
-
-	componentDidUpdate(prevState) {
-		// make it componentDidReceiveProps like
-		if (prevState.openCases === undefined && this.props.openCases === undefined) return;
-		if (JSON.stringify(prevState.openCases) === JSON.stringify(this.props.openCases)) return;
-
-		let dataRows = [];
-
-		if (this.props.openCases) {
-			if (this.props.activeModule === navModules.casting) {
+			if (this.props.activeModule === navModules.fitting) {
 				// on new results:
 				dataRows = [
 					...this.props.openCases.prosthetic
-					.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.casting)
+						.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.fitting)
 						.map((_case) => {
 							// extract date from id here
 							let date = new Date(parseInt(_case._id.substring(0, 8), 16) * 1000);
@@ -161,37 +163,7 @@ class StationCasesTable extends Component {
 							};
 						}),
 					...this.props.openCases.orthotic
-						.filter((_case) => !_case.casting)
-						.map((_case) => {
-							// extract date from id here
-							let date = new Date(parseInt(_case._id.substring(0, 8), 16) * 1000);
-
-							return {
-								id: _case._id,
-								dateComp: date,
-								date: date.toLocaleString(),
-								category: "Orthotic",
-							};
-						}),
-				];
-			}
-			if (this.props.activeModule === navModules.modification) {
-				// on new results:
-				dataRows = [
-					...this.props.openCases.prosthetic
-					.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.modification)
-						.map((_case) => {
-							// extract date from id here
-							let date = new Date(parseInt(_case._id.substring(0, 8), 16) * 1000);
-							return {
-								id: _case._id,
-								dateComp: date,
-								date: date.toLocaleString(),
-								category: "Prosthetic",
-							};
-						}),
-					...this.props.openCases.orthotic
-						.filter((_case) => !_case.modification && _case.casting)
+						.filter((_case) => prostheticCaseStageFinder(_case) === caseStages.fitting)
 						.map((_case) => {
 							// extract date from id here
 							let date = new Date(parseInt(_case._id.substring(0, 8), 16) * 1000);
@@ -206,10 +178,7 @@ class StationCasesTable extends Component {
 				];
 			}
 		}
-
-		this.setState({
-			dataRows,
-		});
+		return dataRows;
 	}
 
 	// table helper functions

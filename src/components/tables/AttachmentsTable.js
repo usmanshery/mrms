@@ -25,18 +25,22 @@ import "../styles/Table.css";
 import fileDownload from "js-file-download";
 import axios from "axios";
 import { navModules } from "../../store/actions/Navigation";
+import { serverUrl } from "../../store/misc/global";
 
 const mapStateToProps = (state) => {
-	let activeCaseAttachments;
-	let activeCaseId;
+	let activeCaseAttachments = [];
+	let activeCaseId = undefined;
+
 	if (state.activeModule === navModules.patient) {
 		activeCaseAttachments = state.patientModule.activeCase.attachments;
 		activeCaseId = state.patientModule.activeCaseId;
 	}
+
 	if (state.activeModule === navModules.admin) {
 		activeCaseAttachments = state.adminModule.activeCase.attachments;
 		activeCaseId = state.adminModule.activeCase._id;
 	}
+
 	return {
 		// a url perhaps with some additional info (url will be the file document id and name of file)
 		activeCaseAttachments,
@@ -184,7 +188,7 @@ class AttachmentsTable extends Component {
 
 	downloadFile(row) {
 		axios
-			.get(`http://localhost:3001/${row.url}`, {
+			.get(`${serverUrl}/${row.url}`, {
 				responseType: "blob",
 			})
 			.then((res) => {

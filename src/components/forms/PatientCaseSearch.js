@@ -1,11 +1,14 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 
-import { cities, objFilter } from "../../store/misc/global";
+import { objFilter } from "../../store/misc/global";
+import { defaultCaseSearchFormValues, defaultCaseSearchFormLabelValues, defaultCaseSearchFormErrors } from "../../store/misc/formValues";
 
 import { Autocomplete } from "@material-ui/lab";
 import { Container, Row, Col } from "react-bootstrap";
 import { TextField, FormControl, FormHelperText, Button } from "@material-ui/core";
+
+import { searchPatientCaseAction } from "../../store/actions/Patient";
 
 import "./FormStyles.css";
 
@@ -14,78 +17,31 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => {
-	return {};
+	return {
+		searchPatientCase: (searchParams) => dispatch(searchPatientCaseAction(searchParams)),
+	};
 };
 
-class PatientCasesSearchForm extends Component {
+class PatientCaseSearchForm extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
 			form: {
-				name: "",
-				fathername: "",
-				sex: "",
-				age: "",
-				ageRange: "",
-				phone: "",
-				rank: "",
-				armynumber: "",
-				unit: "",
-				city: "",
+				...defaultCaseSearchFormValues,
 			},
-			// errors to show against validation
 			errors: {
-				name: false,
-				fathername: false,
-				sex: false,
-				age: false,
-				ageRange: false,
-				phone: false,
-				rank: false,
-				armynumber: false,
-				unit: false,
-				city: false,
+				...defaultCaseSearchFormErrors,
 			},
 		};
 
 		// labels for inputs
 		this.labels = {
-			name: "Patient Name",
-			fathername: "Father's Name",
-
-			sex: "Gender",
-			sexOptions: ["Male", "Female", "Both"],
-
-			phone: "Contact Number",
-			age: "Age",
-			ageRange: "Age Range (+-)",
-
-			rank: "Rank",
-			rankOptions: ["Lt", "Capt", "Maj", "Lt Col", "Col", "Brig", "Maj Gen", "Lt Gen", "Gen"],
-
-			armynumber: "Army Number",
-			unit: "Unit",
-
-			city: "City",
-			cityOptions: cities,
+			...defaultCaseSearchFormLabelValues,
 		};
-
-		this.trigger =
-			this.props.triggerName && this.props.triggerCallback ? (
-				<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-					{this.props.triggerName}
-				</Button>
-			) : undefined;
 	}
 
 	setFormValue(ref, value) {
-		// validate for error
-		let error = false;
-
-		// if required, set following for error validation
-		// if (ref === "<title>") {}
-
 		this.setState({
 			form: {
 				...this.state.form,
@@ -93,7 +49,7 @@ class PatientCasesSearchForm extends Component {
 			},
 			errors: {
 				...this.state.errors,
-				[ref]: error,
+				[ref]: false,
 			},
 		});
 	}
@@ -106,126 +62,150 @@ class PatientCasesSearchForm extends Component {
 		if (usedKeys.length === 0) {
 			return;
 		}
-		let filteredParameters = Object.filter(this.state.form, (key, value) => value !== undefined && value !== null && value !== "");
+		let formValues = this.state.form;
+		if (usedKeys.length > 0) {
+			if (!usedKeys.includes("startDate") && usedKeys.includes("endDate")) {
+				formValues.startDate = undefined;
+				formValues.endDate = undefined;
+				this.setState({
+					errors: {
+						startDate: "Start Date must be selected with End Date",
+						endDate: "___________________________",
+					},
+				});
+			}
+			if (usedKeys.includes("startDate") && !usedKeys.includes("endDate")) {
+				this.setState({
+					errors: {
+						endDate: "___________________________",
+						startDate: "End Date must be selected with Start Date",
+					},
+				});
+				formValues.startDate = undefined;
+				formValues.endDate = undefined;
+			}
+		}
 
-		this.props.triggerCallback(filteredParameters);
+		let filteredParameters = Object.filter(formValues, (key, value) => value !== undefined && value !== null && value !== "");
+
+		if (Object.keys(filteredParameters).length === 0) return;
+
+		if (filteredParameters.caseType !== undefined) {
+			filteredParameters.caseType = filteredParameters.caseType.toLowerCase();
+		}
+
+		let correctedValues = {
+			id: filteredParameters.caseId,
+			type: filteredParameters.caseType,
+			date:
+				filteredParameters.startDate === undefined || filteredParameters.endDate === undefined
+					? undefined
+					: [filteredParameters.startDate, filteredParameters.endDate],
+		};
+
+		// console.log("Searching case with these:", correctedValues);
+		this.props.searchPatientCase(correctedValues);
 	}
 
 	clearForm() {
 		this.setState({
 			form: {
-				name: "",
-				fathername: "",
-				sex: "",
-				age: "",
-				ageRange: "",
-				phone: "",
-				rank: "",
-				armynumber: "",
-				unit: "",
-				city: "",
+				...defaultCaseSearchFormValues,
 			},
 		});
 	}
 
 	render() {
-		const triggerElement = this.trigger ? (
+		const trigger = (
 			<Row>
-				<Col className="col-1 offset-8">
+				{/* Admin Approval Cases (shows both pending and approved/rejected cases) */}
+				<Col className="col-6">
+					<Button variant="contained"  onClick={() => this.props.searchPatientCase({ approval: true })}>
+						Approval Cases
+					</Button>
+				</Col>
+				<Col className="col-3">
 					<Button variant="contained" color="secondary" onClick={() => this.clearForm()}>
 						Clear
 					</Button>
 				</Col>
-				<Col className="col-3 ">{this.trigger}</Col>
+				<Col className="col-3">
+					<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+						Search
+					</Button>
+				</Col>
 			</Row>
-		) : undefined;
+		);
 
 		return (
 			<Container>
 				<Row>Search By Cases</Row>
-				{/* Case Type, Case ID */}
+				{/* work on this: implement fields, call the server with keys and parse return data as cases in the search case table next door -> */}
+
+				{/* Case ID */}
 				<Row>
-					{/* Name */}
-					<Col className="col-6">
-						<FormControl error={this.state.errors.name !== false} variant="standard" fullWidth>
+					{/* Case ID */}
+					<Col className="col">
+						<FormControl variant="standard" fullWidth>
 							<TextField
 								margin="none"
-								label={this.labels.name}
-								value={this.state.form.name}
-								onChange={(event) => this.setFormValue("name", event.target.value)}
+								label={this.labels.caseId}
+								value={this.state.form.caseId}
+								onChange={(event) => this.setFormValue("caseId", event.target.value)}
 								variant="standard"
 							/>
-							<FormHelperText>{this.state.errors.name}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Father's Name */}
-					<Col className="col-6">
-						<FormControl error={this.state.errors.fathername !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.fathername}
-								value={this.state.form.fathername}
-								onChange={(event) => this.setFormValue("fathername", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.fathername}</FormHelperText>
 						</FormControl>
 					</Col>
 				</Row>
-				{/* Case Registration Date */}
+				{/* Case Type */}
 				<Row>
-					{/* Gender */}
-					<Col className="col-3">
-						<FormControl error={this.state.errors.sex !== false} variant="standard" fullWidth>
+					{/* Case Type */}
+					<Col className="col">
+						<FormControl variant="standard" fullWidth>
 							<Autocomplete
-								onChange={(event, value) => this.setFormValue("sex", value)}
-								options={this.labels.sexOptions}
-								renderInput={(params) => <TextField {...params} label={this.labels.sex} variant="standard" />}
+								onChange={(event, value) => this.setFormValue("caseType", value)}
+								options={this.labels.caseTypeOptions}
+								value={this.state.form.caseType}
+								renderInput={(params) => <TextField {...params} label={this.labels.caseType} variant="standard" />}
 							/>
-							<FormHelperText>{this.state.errors.sex}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Phone */}
-					<Col className="col-3">
-						<FormControl error={this.state.errors.phone !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.phone}
-								value={this.state.form.phone}
-								onChange={(event) => this.setFormValue("phone", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.phone}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Age */}
-					<Col className="col-3">
-						<FormControl error={this.state.errors.age !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.age}
-								value={this.state.form.age}
-								onChange={(event) => this.setFormValue("age", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.age}</FormHelperText>
-						</FormControl>
-					</Col>
-					{/* Age Range */}
-					<Col className="col-3">
-						<FormControl error={this.state.errors.ageRange !== false} variant="standard" fullWidth>
-							<TextField
-								margin="none"
-								label={this.labels.ageRange}
-								value={this.state.form.ageRange}
-								onChange={(event) => this.setFormValue("ageRange", event.target.value)}
-								variant="standard"
-							/>
-							<FormHelperText>{this.state.errors.ageRange}</FormHelperText>
 						</FormControl>
 					</Col>
 				</Row>
-				{triggerElement}
+				{/* Duration Limit */}
+				<Row>
+					{/* Start Date */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.startDate !== false} variant="standard" fullWidth>
+							<TextField
+								label={this.labels.startDate}
+								type="date"
+								value={this.state.form.startDate}
+								onChange={(event) => this.setFormValue("startDate", event.target.value)}
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+							<FormHelperText>{this.state.errors.startDate}</FormHelperText>
+						</FormControl>
+					</Col>
+					{/* End Date */}
+					<Col className="col-6">
+						<FormControl error={this.state.errors.endDate !== false} variant="standard" fullWidth>
+							<TextField
+								label={this.labels.endDate}
+								type="date"
+								value={this.state.form.endDate}
+								onChange={(event) => this.setFormValue("endDate", event.target.value)}
+								InputLabelProps={{
+									shrink: true,
+								}}
+							/>
+							<FormHelperText>{this.state.errors.endDate}</FormHelperText>
+						</FormControl>
+					</Col>
+				</Row>
+
+				{trigger}
 			</Container>
 			/*
 				Fields:
@@ -246,4 +226,4 @@ class PatientCasesSearchForm extends Component {
 	}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(PatientCasesSearchForm);
+export default connect(mapStateToProps, mapDispatchToProps)(PatientCaseSearchForm);

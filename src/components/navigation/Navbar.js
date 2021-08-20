@@ -3,16 +3,18 @@ import { connect } from "react-redux";
 
 import { changeActiveModule, navModules, toggleModal } from "../../store/actions/Navigation";
 
-import { AppBar, Toolbar, Typography, Button, IconButton } from "@material-ui/core";
-import { AccountCircle } from "@material-ui/icons";
+import { AppBar, Toolbar, Typography, Button } from "@material-ui/core";
 
 import "../styles/Navigation.css";
+import { Dropdown } from "react-bootstrap";
+import { logoutUserAction } from "../../store/actions/User";
 
 const mapStateToProps = (state) => {
 	return {
 		activeModule: state.activeModule,
 		loggedIn: state.loggedIn,
-		loggedUserName: state.loggedIn ? state.loggedUserData.name : undefined,
+		loggedUserName: state.loggedUserData.name,
+		loggedUserLevel: state.loggedUserData.userLevel,
 	};
 };
 
@@ -20,6 +22,7 @@ const mapDispatchToProps = (dispatch) => {
 	return {
 		selectActiveModule: (module) => dispatch(changeActiveModule(module)),
 		toggleLoginModal: () => dispatch(toggleModal("loginModal", true)),
+		logout: () => dispatch(logoutUserAction()),
 	};
 };
 
@@ -52,23 +55,27 @@ class Navbar extends Component {
 					<div id="navbarLinksContainer">
 						{this.props.loggedIn ? (
 							<>
-								<Button
-									style={this.props.activeModule === navModules.admin ? buttonHighlite : buttonSimple}
-									onClick={() => this.props.selectActiveModule(navModules.admin)}
-								>
-									Admin
-								</Button>
+								{this.props.loggedUserLevel === "Super-Admin" || this.props.loggedUserLevel === "Admin" ? (
+									<>
+										<Button
+											style={this.props.activeModule === navModules.admin ? buttonHighlite : buttonSimple}
+											onClick={() => this.props.selectActiveModule(navModules.admin)}
+										>
+											Admin
+										</Button>
+										<Button
+											style={this.props.activeModule === navModules.user ? buttonHighlite : buttonSimple}
+											onClick={() => this.props.selectActiveModule(navModules.user)}
+										>
+											Users
+										</Button>
+									</>
+								) : undefined}
 								<Button
 									style={this.props.activeModule === navModules.patient ? buttonHighlite : buttonSimple}
 									onClick={() => this.props.selectActiveModule(navModules.patient)}
 								>
 									Patients
-								</Button>
-								<Button
-									style={this.props.activeModule === navModules.user ? buttonHighlite : buttonSimple}
-									onClick={() => this.props.selectActiveModule(navModules.user)}
-								>
-									Users
 								</Button>
 							</>
 						) : undefined}
@@ -93,19 +100,30 @@ class Navbar extends Component {
 						</Button>
 					</div>
 					<div style={{ flexGrow: 1 }}></div>
-					{this.props.loggedIn ? (
-						<IconButton edge="end" onClick={this.props.login} color="inherit" size="medium">
-							<AccountCircle fontSize="large" />
-							{this.props.loggedUserName}
-						</IconButton>
-					) : (
-						<Button
-							// style={}
-							onClick={() => this.props.toggleLoginModal()}
-						>
-							Login
-						</Button>
-					)}
+					<div style={{ paddingBottom: "16px" }}>
+						{this.props.loggedIn ? (
+							// 	<AccountCircle fontSize="large" />
+							// 	{this.props.loggedUserName}
+							// onClick={this.props.login}
+							<Dropdown>
+								<Dropdown.Toggle variant="secondary" id="dropdown-basic">
+									{this.props.loggedUserName}
+								</Dropdown.Toggle>
+
+								<Dropdown.Menu>
+									{/* <Dropdown.Item onClick={() => this.props.logout()}>Change Password</Dropdown.Item> */}
+									<Dropdown.Item onClick={() => this.props.logout()}>Logout</Dropdown.Item>
+								</Dropdown.Menu>
+							</Dropdown>
+						) : (
+							<Button
+								// style={}
+								onClick={() => this.props.toggleLoginModal()}
+							>
+								Login
+							</Button>
+						)}
+					</div>
 				</Toolbar>
 			</AppBar>
 		);

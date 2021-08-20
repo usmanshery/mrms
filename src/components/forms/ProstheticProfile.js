@@ -12,7 +12,7 @@ import {
 	defaultProstheticFormLabelValues,
 	defaultProfileFormLabelValues,
 } from "../../store/misc/formValues";
-import { rowWrapper, objFilter, validation } from "../../store/misc/global";
+import { rowWrapper, objFilter, validation, prostheticCaseStageFinder, caseStages } from "../../store/misc/global";
 
 import TTPForm from "./MTTP";
 import TFPForm from "./MTFP";
@@ -25,18 +25,22 @@ import { adminCaseUpdatedAction } from "../../store/actions/Admin";
 import "./FormStyles.css";
 import AdviseForm from "./AdviseForm";
 import CaseAttachmentsList from "./CaseAttachmentsList";
+import CaseHistory from "../views/CaseHistoryView";
 
 const mapStateToProps = (state, props) => {
 	let readOnly = props.readOnly === undefined ? false : props.readOnly;
 	let measurementOnly = props.measurementOnly === undefined ? false : props.measurementOnly;
 	if (state.activeModule === navModules.patient) {
 		let isNew = state.patientModule.newCase === undefined ? false : true;
+
 		// not new case
 		if (state.patientModule.newCase === undefined) {
+			let receptionAction = prostheticCaseStageFinder(state.patientModule.activeCase.prosthetic) === caseStages.reception;
 			return {
 				readOnly,
 				measurementOnly,
 				isNew,
+				receptionAction,
 				patientCategory: state.patientModule.activePatientData.category,
 				activeCaseId: state.patientModule.activeCaseId,
 				activeCase: state.patientModule.activeCase.prosthetic,
@@ -60,31 +64,39 @@ const mapStateToProps = (state, props) => {
 			patientCategory: state.adminModule.activeCase.personalDetails.category,
 			activeCaseId: state.adminModule.activeCase._id,
 			activeCase: state.adminModule.activeCase,
+			admin: true,
 			// activePatientData: state.patientModule.activePatientData, // enable this if needed
 		};
 	}
 
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		let readOnly = state.activeModule === navModules.casting ? false : true;
+		return {
+			// station related
+			readOnly,
+			station: state.activeModule.toLowerCase(),
+			openCases: state.stationModule.openCases,
+			staff: state.stationModule.staff ? state.stationModule.staff.map((staff) => staff.username) : [],
+			activeStationCaseId: state.stationModule.activeCaseId,
+			activeCaseCategory: state.stationModule.activeCaseCategory,
+			activeCase: state.stationModule.activeCase,
+		};
+	}
+
 	return {
-		activePatientId: state.patientModule.activePatientId,
-		activePatientCaseId: state.patientModule.activePatientCaseId,
-		activePatientData: state.patientModule.activePatientData,
-		activePatientEditable: state.patientModule.activePatientEditable,
 		// station related
 		openCases: state.stationModule.openCases,
 		staff: state.stationModule.staff ? state.stationModule.staff.map((staff) => staff.username) : [],
 		activeStationCaseId: state.stationModule.activeCaseId,
 		activeCaseCategory: state.stationModule.activeCaseCategory,
 		stationName: state.activeModule.toLowerCase(),
-		// admin related
-		pendingCases: state.adminModule.pendingCases,
-		activeAdminCaseId: state.adminModule.activeCaseId,
 	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
 		insertCase: (patientId, caseDetails) => dispatch(insertCaseAction(patientId, "prosthetic", caseDetails)),
-		updateCase: (caseId, caseDetails) => dispatch(updateCaseAction(caseId, "prosthetic", caseDetails)),
+		updateCase: (caseId, caseDetails, cb) => dispatch(updateCaseAction(caseId, "prosthetic", caseDetails, cb)),
 		updateStationCase: (caseId, caseDetails, station) => dispatch(stationCaseUpdatedAction(caseId, "prosthetic", caseDetails, station)),
 		updateAdminCase: (caseId, approval) => dispatch(adminCaseUpdatedAction(caseId, approval)),
 		toggleUplaodFileModal: () => dispatch(toggleModal("uploadFileModal", true)),
@@ -131,16 +143,15 @@ class ProstheticForm extends Component {
 	// loads form and error values from DB or defaults
 	loadValues() {
 		let activeCaseData;
-
+		console.log(this.props.activeCase);
 		// New
 		if (this.props.isNew) {
 			activeCaseData = { ...defaultProstheticFormValues };
-		} 
+		}
 		// Station ?
 		else if (this.props.station) {
-			activeCaseData = this.props.openCases.prosthetic.filter((_case) => _case._id === this.props.activeStationCaseId)[0];
-			activeCaseData = { ...defaultProstheticFormValues, ...activeCaseData };
-		} 
+			activeCaseData = { ...defaultProstheticFormValues, ...this.props.activeCase };
+		}
 		// Admin or Patient
 		else {
 			activeCaseData = { ...defaultProstheticFormValues, ...this.props.activeCase };
@@ -154,7 +165,7 @@ class ProstheticForm extends Component {
 	}
 
 	setFormValue(ref, value, spread = false) {
-		if (this.readOnly) return;
+		if (this.props.readOnly && !this.state.staffDetailsPopup) return;
 
 		let error = false;
 		if (this.props.station) {
@@ -233,22 +244,36 @@ class ProstheticForm extends Component {
 			let formData = {
 				...this.state.form,
 				patientCategory: this.props.patientCategory,
-				[this.state.form.amputationType]: {},
-				adviseForm:
+				sponsoredCase:
 					this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[0] ||
-					this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[1]
-						? {}
-						: undefined,
+					this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[1],
+				[this.state.form.amputationType]: {},
+				adviseForm: {},
 			};
+			// console.log(this.props.patientCategory);
+			// console.log(formData);
 			this.props.insertCase(this.props.activePatientId, formData);
 		} else if (this.props.station) {
 			// dispatch update with case id and updated details
 			let formData = this.state.form;
-			this.props.updateStationCase(this.props.activeStationCaseId, formData, this.props.stationName);
+			this.props.updateStationCase(this.props.activeStationCaseId, formData, this.props.station);
 			this.togglePopups("staffDetailsPopup");
 		} else if (this.props.admin) {
-			// dispatch update with case id and updated details
-			// this.props.updateAdminCase(this.props.activeAdminCaseId, param);
+			// admin has approved, update the case for potential values of Advise Form and then set case field approved
+			let formData = this.state.form;
+			this.props.updateCase(this.props.activeCaseId, formData, () => {
+				this.props.updateAdminCase(this.props.activeCaseId, true);
+			});
+		} else if (this.props.receptionAction) {
+			// add receptionist/current user info and forward it
+			let formData = {
+				...this.state.form,
+				reception: {
+					date: Date.now(),
+				},
+			};
+			// console.log(formData);
+			this.props.updateCase(this.props.activeCaseId, formData);
 		} else {
 			// dispatch update with case id and updated details
 			let formData = this.state.form;
@@ -265,43 +290,105 @@ class ProstheticForm extends Component {
 	}
 
 	render() {
+		let historyComponent = undefined;
 		let measurementForm = undefined;
 		let attachmentComponent = undefined;
 		let adviseFormComponent = undefined;
 		let triggerAction = undefined;
+		let rejectAction = undefined;
+
+		// user data popup
+		const userCredentialsPopup = (
+			<Modal show={this.state.staffDetailsPopup} onHide={() => this.togglePopups("staffDetailsPopup")}>
+				<Modal.Header closeButton>
+					<Modal.Title>Enter Your Credentials</Modal.Title>
+				</Modal.Header>
+				<Modal.Body>
+					<FormControl error={this.state.errors.staffUsername !== false} variant="standard" fullWidth>
+						<Autocomplete
+							onChange={(event, value) => this.setFormValue("staffUsername", value)}
+							options={this.props.staff}
+							value={this.state.form.staffUsername}
+							renderInput={(params) => <TextField {...params} label={this.labels.staffUsername} variant="standard" />}
+						/>
+						<FormHelperText>{this.state.errors.staffUsername}</FormHelperText>
+					</FormControl>
+					<FormControl error={this.state.errors.staffPassword !== false} variant="standard" fullWidth>
+						<TextField
+							margin="none"
+							type="password"
+							label={this.labels.staffPassword}
+							value={this.state.form.staffPassword}
+							onChange={(event) => this.setFormValue("staffPassword", event.target.value)}
+							variant="standard"
+						/>
+						<FormHelperText>{this.state.errors.staffPassword}</FormHelperText>
+					</FormControl>
+					<div>
+						{/* style={{ float: "right", padding: "10px 20px 10px 20px" }} */}
+						<Button variant="contained" color="primary" style={{ float: "right" }} onClick={this.triggerAction}>
+							{"Send"}
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
+		);
 
 		// add measurement form
 		if (!this.props.isNew) {
 			const formType = this.state.form.amputationType;
 			if (formType === "TTP") {
-				measurementForm = rowWrapper(
-					<TTPForm
-						// triggerAction={
-						// 	this.props.station ? () => this.togglePopups("staffDetailsPopup") : this.props.admin ? (approval) => this.triggerAction(approval) : this.triggerAction
-						// }
-						// station={this.props.station}
-						// admin={this.props.admin}
-						setFormValue={this.setFormValue}
-						readOnly={this.readOnly}
-					/>,
-					true
-				);
+				measurementForm = rowWrapper(<TTPForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "TFP") {
-				measurementForm = rowWrapper(<TFPForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<TFPForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 
 			// finish here if only measurement form is to be displayed
-			if (this.measurementOnly) {
-				return <Container>{measurementForm}</Container>;
+			if (this.props.station) {
+				// trigger action
+				triggerAction = (
+					<Container>
+						<Row>
+							<Col className="col-3 offset-9">
+								<div className="form-submit-button">
+									<Button variant="contained" color="primary" onClick={() => this.togglePopups("staffDetailsPopup")}>
+										{"Finish"}
+									</Button>
+								</div>
+							</Col>
+						</Row>
+					</Container>
+				);
+				return (
+					<Container>
+						{measurementForm}
+						{triggerAction}
+						{userCredentialsPopup}
+					</Container>
+				);
 			}
 
-			attachmentComponent = rowWrapper(<CaseAttachmentsList readOnly={this.readOnly} />, true);
-			if (
-				this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[0] ||
-				this.props.patientCategory === defaultProfileFormLabelValues.categoryOptions[1]
-			) {
+			historyComponent = rowWrapper(<CaseHistory caseCategory="prosthetic" caseDetail={this.props.activeCase} />, true);
+			attachmentComponent = rowWrapper(<CaseAttachmentsList readOnly={this.props.readOnly} />, true);
+
+			if (this.props.activeCase.sponsoredCase) {
 				adviseFormComponent = rowWrapper(<AdviseForm setFormValue={this.setFormValue} />, true);
+				if (this.props.admin) {
+					rejectAction = (
+						<Col>
+							<Button
+								variant="contained"
+								color="secondary"
+								onClick={() => {
+									this.props.updateAdminCase(this.props.activeCaseId, false);
+								}}
+							>
+								Reject
+							</Button>
+						</Col>
+					);
+				}
 			}
 		}
 
@@ -566,60 +653,25 @@ class ProstheticForm extends Component {
 		);
 
 		// trigger action
+		let triggerActionTitle = this.props.isNew ? "Register Case" : this.props.receptionAction ? "Seen & Forward" : "Update";
+
 		triggerAction = (
 			<Container>
 				<Row>
 					<Col className="col-3 offset-9">
-						<div className="form-submit-button">
-							<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
-								{this.props.isNew ? "Register Case" : "Update"}
-							</Button>
-						</div>
+						<Button variant="contained" color="primary" onClick={() => this.triggerAction()}>
+							{triggerActionTitle}
+						</Button>
 					</Col>
+					{rejectAction}
 				</Row>
 			</Container>
-		);
-
-		// user data popup
-		const userCredentialsPopup = (
-			<Modal show={this.state.staffDetailsPopup} onHide={() => this.togglePopups("staffDetailsPopup")}>
-				<Modal.Header closeButton>
-					<Modal.Title>Enter Your Credentials</Modal.Title>
-				</Modal.Header>
-				<Modal.Body>
-					<FormControl error={this.state.errors.staffUsername !== false} variant="standard" fullWidth>
-						<Autocomplete
-							onChange={(event, value) => this.setFormValue("staffUsername", value)}
-							options={this.props.staff}
-							value={this.state.form.staffUsername}
-							renderInput={(params) => <TextField {...params} label={this.labels.staffUsername} variant="standard" />}
-						/>
-						<FormHelperText>{this.state.errors.staffUsername}</FormHelperText>
-					</FormControl>
-					<FormControl error={this.state.errors.staffPassword !== false} variant="standard" fullWidth>
-						<TextField
-							margin="none"
-							type="password"
-							label={this.labels.staffPassword}
-							value={this.state.form.staffPassword}
-							onChange={(event) => this.setFormValue("staffPassword", event.target.value)}
-							variant="standard"
-						/>
-						<FormHelperText>{this.state.errors.staffPassword}</FormHelperText>
-					</FormControl>
-					<div>
-						{/* style={{ float: "right", padding: "10px 20px 10px 20px" }} */}
-						<Button variant="contained" color="primary" style={{ float: "right" }} onClick={this.triggerAction}>
-							{"Send"}
-						</Button>
-					</div>
-				</Modal.Body>
-			</Modal>
 		);
 
 		// return accordian with container rows for individual sub-components
 		let content = (
 			<Container>
+				{historyComponent}
 				{adviseFormComponent}
 				{attachmentComponent}
 				{caseFields}

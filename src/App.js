@@ -16,16 +16,20 @@ import UploadFileModal from "./components/forms/UploadFileModal";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
+import { pageLoadAction } from "./store/actions/User";
 
 const mapStateToProps = (state) => {
 	return {
 		notifications: state.notifications,
+		loading: state.loading,
+		loggedIn: state.loggedIn,
 	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
 		clearNotifications: (currentNotifications) => dispatch(onNotificationPop({ currentNotifications })),
+		onPageLoad: () => dispatch(pageLoadAction()),
 	};
 };
 
@@ -33,6 +37,10 @@ class App extends Component {
 	// constructor(props) {
 	// 	super(props);
 	// }
+
+	componentDidMount(){
+		if (!this.props.loggedIn) this.props.onPageLoad();
+	}
 
 	componentDidUpdate(prevState) {
 		if (prevState.notifications === this.props.notifications) return;

@@ -9,9 +9,12 @@ import PatientCasesList from "./forms/PatientCasesList";
 // import ULO2Form from "./forms/MULO2";
 import AdviceForm from "./forms/AdviseForm";
 
-import PatientSearchComponent from "./patient/PatientSearchComponent";
+// import PatientSearchComponent from "./patient/PatientSearchComponent";
+import PatientProfileSearchForm from "./forms/PatientProfileSearch";
+import PatientCaseSearchForm from "./forms/PatientCaseSearch";
 import PatientCaseDetailForm from "./forms/PatientCaseDetail";
 import PatientProfilesTable from "./tables/PatientProfileTable";
+import PatientCasesTable from "./tables/PatientCasesTable";
 
 // import { objFilter } from "../store/session";
 import { patientModuleActions } from "../store/actions/Patient";
@@ -52,7 +55,6 @@ class PatientComponent extends Component {
 	}
 
 	getAddProfile() {
-		let title = "Add New Patient";
 		let content = (
 			<PatientForm
 				action={patientModuleActions.regNew}
@@ -60,11 +62,7 @@ class PatientComponent extends Component {
 				triggerCallback={this.registerNewPatient}
 			/>
 		);
-		return (
-			<Row>
-				<Col> {accordianWrapper(title, content)}</Col>
-			</Row>
-		);
+		return rowWrapper(content);
 	}
 
 	getProfileView(title, readOnly = false) {
@@ -93,16 +91,26 @@ class PatientComponent extends Component {
 	getSearch() {
 		return (
 			<>
-				<Row>
-					<Col>
-						<PatientSearchComponent />
-					</Col>
-				</Row>
-				<Row>
-					<Col>
-						<PatientProfilesTable />
-					</Col>
-				</Row>
+				{/* Search Forms (2) */}
+				{rowWrapper(
+					accordianWrapper(
+						"Search",
+						<Container fluid>
+							<Row>
+								<Col className="col-8">
+									<PatientProfileSearchForm />
+								</Col>
+								<Col className="col-4">
+									<PatientCaseSearchForm />
+								</Col>
+							</Row>
+						</Container>
+					)
+				)}
+				{/* Profile Search Result */}
+				{rowWrapper(accordianWrapper("Patient Profile Search Results", <PatientProfilesTable />))}
+				{/* Case Search Result */}
+				{rowWrapper(accordianWrapper("Patient Case Search Results", <PatientCasesTable searchOnly />))}
 			</>
 		);
 	}

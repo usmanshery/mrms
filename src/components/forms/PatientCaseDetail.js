@@ -16,6 +16,7 @@ function PatientCaseDetailForm(props) {
 	*/
 	const caseCategory = useSelector((state) => {
 		// in patient module use
+		// console.log(state.patientModule)
 		if (state.activeModule === navModules.patient) {
 			// if new case
 			if (state.patientModule.newCase) {

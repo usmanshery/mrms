@@ -7,7 +7,7 @@ import { defaultAdviseFormLabelValues, defaultAdviseFormValues, tableActions } f
 import { navModules } from "../../store/actions/Navigation";
 
 import { withStyles } from "@material-ui/core/styles";
-import { TextField, Accordion, AccordionSummary, AccordionDetails, Fab, FormControlLabel, Switch } from "@material-ui/core";
+import { TextField, Accordion, AccordionSummary, AccordionDetails, Fab, FormControlLabel, Switch, Button } from "@material-ui/core";
 // import {DeleteIcon} from '@material-ui/icons';
 import DeleteIcon from "@material-ui/icons/Delete";
 import AddIcon from "@material-ui/icons/Add";
@@ -16,6 +16,7 @@ import AddIcon from "@material-ui/icons/Add";
 import Typography from "@material-ui/core/Typography";
 // import ProfileImage from "@daym3l/react-profile-image";
 import { Container, Row, Col, Table } from "react-bootstrap";
+import ReactToPrint, { PrintContextConsumer } from "react-to-print";
 
 const mapStateToProps = (state, props) => {
 	let admin = state.activeModule === navModules.admin;
@@ -44,8 +45,6 @@ const mapStateToProps = (state, props) => {
 		};
 		formValues = state.adminModule.activeCase.adviseForm;
 	}
-	console.log(personalDetails);
-	console.log(formValues);
 	/*
 		only need personal details and form related fields,
 	*/
@@ -220,155 +219,176 @@ class AdviceForm extends Component {
 		};
 
 		return (
-			<Accordion expanded>
-				<AccordionSummary className={this.props.classes.removeLowerMargin}>
-					<Typography className={this.props.classes.titleHBold} variant="h5">
-						{"Advice Form"}
-					</Typography>
-				</AccordionSummary>
-				<AccordionSummary className={this.props.classes.removeUpperMargin}>
-					<Typography variant="h5">{!this.props.followUp ? "Primary Case" : "Follow Up Case"}</Typography>
-				</AccordionSummary>
-				<AccordionDetails className="formTopline">
-					<Container>
-						<Row className="d-flex justify-content-between">
-							<Col className="d-inline-flex flex-grow-0">
-								<div className={this.props.classes.noWrap}>
-									<FormControlLabel
-										control={<Switch checked={this.state.form.followup} onChange={(event) => this.setFormValue("followup", event.target.checked)} />}
-										label={this.labels.followup}
-									/>
-								</div>
-							</Col>
-							<Col className="d-flex flex-column">
-								<h5>Summary For Issuance of Artificial Limbs (Prostheses)</h5>
-							</Col>
-							<Col className="d-inline-flex flex-grow-0">
-								<div></div>
-							</Col>
-						</Row>
-						<Row>
-							<hr style={{ width: "100%" }} />
-						</Row>
-						<Row>
-							<Col className="col-3">
-								<TextField className={"fullWidth"} label={this.labels.id} value={this.state.form.id} variant="standard" contentEditable={false} />
-							</Col>
-							<Col className="col-5">
-								<TextField className={"fullWidth"} label={this.labels.name} value={this.state.form.name} variant="standard" contentEditable={false} />
-							</Col>
-							<Col className="col-2">
-								<TextField className={"fullWidth"} label={this.labels.rank} value={this.state.form.rank} variant="standard" contentEditable={false} />
-							</Col>
-							<Col className="col-2">
-								<TextField className={"fullWidth"} label={this.labels.unit} value={this.state.form.unit} variant="standard" contentEditable={false} />
-							</Col>
-						</Row>
-						<Row>
-							<hr style={{ width: "100%" }} />
-						</Row>
-						<Row>
-							<Col>
-								{this.state.form.followup ? (
-									<p className={this.props.classes.textLeft}>
-										He is a follow up case of{" "}
-										<TextField
-											className={this.props.classes.textFieldWidthLong}
-											onChange={(event) => this.setFormValue("case", event.target.value)}
-											color="secondary"
-											size="small"
-										></TextField>
-										. In order to rehabilitate the patient, he needs <b>replacement</b> of following <b>item / items</b> from artificial limbs and appliances centre
-										(ALAC) after sanction from the competent authority. And more text follows the stream
-									</p>
-								) : (
-									<p className={this.props.classes.textLeft}>
-										He is a case of{" "}
-										<TextField
-											className={this.props.classes.textFieldWidthLong}
-											onChange={(event) => this.setFormValue("case", event.target.value)}
-											color="secondary"
-											size="small"
-										></TextField>
-										, due to{" "}
-										<TextField
-											className={this.props.classes.textFieldWidthMedium}
-											onChange={(event) => this.setFormValue("cause", event.target.value)}
-											color="secondary"
-											size="small"
-										></TextField>
-										. Presently his residual limb is healthy with healed scars. There is no discharge or tender point. The scar is not adherent to underlying bone. Range
-										of motion
-										<TextField onChange={(event) => this.setFormValue("rangeOfMotion", event.target.value)} color="secondary" size="small"></TextField> is within normal
-										limits and the residual limb is ready for prosthetic rehabilitation. In order to rehabilitate the patient, he needs following items from artificial
-										limbs &amp; appliances center (ALAC) after sanction from competent authority.
-									</p>
-								)}
-							</Col>
-						</Row>
-						<Row>
-							<hr style={{ width: "100%" }} />
-						</Row>
-						<Row>
-							<Col>
-								{/* variant="dark" */}
-								<Table size="sm" striped bordered hover>
-									<table className={this.props.classes.fullWidth}>
-										<thead>
-											<tr>
-												<th>S/No</th>
-												<th>Nomenclature</th>
-												<th>Qty</th>
-												<th>Approx Cost</th>
-											</tr>
-										</thead>
-										<tbody>{renderRows()}</tbody>
-									</table>
-								</Table>
-							</Col>
-						</Row>
-						<Row>
-							<hr style={{ width: "100%" }} />
-						</Row>
-						<Row>
-							<Col className="col-4">
-								<p className={this.props.classes.paraSet}>Sig ______________________________________</p>
-							</Col>
-							<Col className="offset-4 col-4">
-								<p className={this.props.classes.paraSet}>Sig ______________________________________</p>
-							</Col>
-						</Row>
-						<Row>
-							<Col className="col-3">
-								<p className={this.props.classes.paraSet}>Resident Rehab Medicine</p>
-							</Col>
-							<Col className="offset-5 col-3">
-								<p className={this.props.classes.paraSet}>Cl Spec Rehab Medicine</p>
-							</Col>
-						</Row>
-						<Row>
-							<Col className="col-2">
-								<p className={this.props.classes.paraSet}>AFIRM Rwp</p>
-							</Col>
-							<Col className="offset-6 col-2">
-								<p className={this.props.classes.paraSet}>AFIRM Rwp</p>
-							</Col>
-						</Row>
-						<Row>
-							<Col>
-								<br></br>
-							</Col>
-						</Row>
-						<Row>
-							<Col className="col-3">
-								<p className={this.props.classes.paraSet}>AF Institute of Rehab</p>
-								<p className={this.props.classes.paraSet}>Medicine Rawalpindi</p>
-								<p className={this.props.classes.paraSet}>Dated _____/_____/202__</p>
-							</Col>
-						</Row>
-					</Container>
-				</AccordionDetails>
-			</Accordion>
+			<div ref={(el) => (this.componentRef = el)}>
+				<Accordion expanded>
+					<AccordionSummary className={this.props.classes.removeLowerMargin}>
+						<Typography className={this.props.classes.titleHBold} variant="h5">
+							{"Advice Form"}
+						</Typography>
+					</AccordionSummary>
+					<AccordionSummary className={this.props.classes.removeUpperMargin}>
+						<Typography variant="h5">{!this.props.followUp ? "Primary Case" : "Follow Up Case"}</Typography>
+					</AccordionSummary>
+					<AccordionDetails className="formTopline">
+						<Container>
+							<Row className="d-flex justify-content-between">
+								<Col className="d-inline-flex flex-grow-0">
+									<div className={this.props.classes.noWrap}>
+										<FormControlLabel
+											control={<Switch checked={this.state.form.followup} onChange={(event) => this.setFormValue("followup", event.target.checked)} />}
+											label={this.labels.followup}
+										/>
+									</div>
+								</Col>
+								<Col className="d-flex flex-column">
+									<h5>Summary For Issuance of Artificial Limbs (Prostheses)</h5>
+								</Col>
+								<Col className="d-inline-flex flex-grow-0">
+									<div></div>
+								</Col>
+							</Row>
+							<Row>
+								<hr style={{ width: "100%" }} />
+							</Row>
+							<Row>
+								<Col className="col-3">
+									<TextField className={"fullWidth"} label={this.labels.id} value={this.state.form.id} variant="standard" contentEditable={false} />
+								</Col>
+								<Col className="col-5">
+									<TextField className={"fullWidth"} label={this.labels.name} value={this.state.form.name} variant="standard" contentEditable={false} />
+								</Col>
+								<Col className="col-2">
+									<TextField className={"fullWidth"} label={this.labels.rank} value={this.state.form.rank} variant="standard" contentEditable={false} />
+								</Col>
+								<Col className="col-2">
+									<TextField className={"fullWidth"} label={this.labels.unit} value={this.state.form.unit} variant="standard" contentEditable={false} />
+								</Col>
+							</Row>
+							<Row>
+								<hr style={{ width: "100%" }} />
+							</Row>
+							<Row>
+								<Col>
+									{this.state.form.followup ? (
+										<p className={this.props.classes.textLeft}>
+											He is a follow up case of{" "}
+											<TextField
+												className={this.props.classes.textFieldWidthLong}
+												onChange={(event) => this.setFormValue("case", event.target.value)}
+												color="secondary"
+												size="small"
+												value={this.state.form.case}
+											></TextField>
+											. In order to rehabilitate the patient, he needs <b>replacement</b> of following <b>item / items</b> from artificial limbs and appliances centre
+											(ALAC) after sanction from the competent authority. And more text follows the stream
+										</p>
+									) : (
+										<p className={this.props.classes.textLeft}>
+											He is a case of{" "}
+											<TextField
+												className={this.props.classes.textFieldWidthLong}
+												onChange={(event) => this.setFormValue("case", event.target.value)}
+												color="secondary"
+												size="small"
+												value={this.state.form.case}
+											></TextField>
+											, due to{" "}
+											<TextField
+												className={this.props.classes.textFieldWidthMedium}
+												onChange={(event) => this.setFormValue("cause", event.target.value)}
+												color="secondary"
+												size="small"
+												value={this.state.form.cause}
+											></TextField>
+											. Presently his residual limb is healthy with healed scars. There is no discharge or tender point. The scar is not adherent to underlying bone. Range
+											of motion
+											<TextField
+												onChange={(event) => this.setFormValue("rangeOfMotion", event.target.value)}
+												color="secondary"
+												size="small"
+												value={this.state.form.rangeOfMotion}
+											></TextField>{" "}
+											is within normal limits and the residual limb is ready for prosthetic rehabilitation. In order to rehabilitate the patient, he needs following items
+											from artificial limbs &amp; appliances center (ALAC) after sanction from competent authority.
+										</p>
+									)}
+								</Col>
+							</Row>
+							<Row>
+								<hr style={{ width: "100%" }} />
+							</Row>
+							<Row>
+								<Col>
+									{/* variant="dark" */}
+									<Table size="sm" striped bordered hover>
+										<table className={this.props.classes.fullWidth}>
+											<thead>
+												<tr>
+													<th>S/No</th>
+													<th>Nomenclature</th>
+													<th>Qty</th>
+													<th>Approx Cost</th>
+												</tr>
+											</thead>
+											<tbody>{renderRows()}</tbody>
+										</table>
+									</Table>
+								</Col>
+							</Row>
+							<Row>
+								<hr style={{ width: "100%" }} />
+							</Row>
+							<Row>
+								<Col className="col-4">
+									<p className={this.props.classes.paraSet}>Sig ______________________________________</p>
+								</Col>
+								<Col className="offset-4 col-4">
+									<p className={this.props.classes.paraSet}>Sig ______________________________________</p>
+								</Col>
+							</Row>
+							<Row>
+								<Col className="col-3">
+									<p className={this.props.classes.paraSet}>Resident Rehab Medicine</p>
+								</Col>
+								<Col className="offset-5 col-3">
+									<p className={this.props.classes.paraSet}>Cl Spec Rehab Medicine</p>
+								</Col>
+							</Row>
+							<Row>
+								<Col className="col-2">
+									<p className={this.props.classes.paraSet}>AFIRM Rwp</p>
+								</Col>
+								<Col className="offset-6 col-2">
+									<p className={this.props.classes.paraSet}>AFIRM Rwp</p>
+								</Col>
+							</Row>
+							<Row>
+								<Col>
+									<br></br>
+								</Col>
+							</Row>
+							<Row>
+								<Col className="col-3">
+									<p className={this.props.classes.paraSet}>AF Institute of Rehab</p>
+									<p className={this.props.classes.paraSet}>Medicine Rawalpindi</p>
+									<p className={this.props.classes.paraSet}>Dated _____/_____/202__</p>
+								</Col>
+								<Col className="offset-10 col-2">
+									<ReactToPrint content={() => this.componentRef}>
+										<PrintContextConsumer>
+											{({ handlePrint }) => (
+												<Button variant="contained" color="primary" onClick={handlePrint}>
+													Print
+												</Button>
+											)}
+										</PrintContextConsumer>
+									</ReactToPrint>
+								</Col>
+							</Row>
+						</Container>
+					</AccordionDetails>
+				</Accordion>
+			</div>
 		);
 	}
 }

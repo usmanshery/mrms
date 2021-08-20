@@ -1,4 +1,5 @@
 import { createAction } from "@reduxjs/toolkit";
+import { serverUrl } from "../misc/global";
 
 export const apiCall = createAction("apiCall");
 export const httpHeaders = { "Content-Type": "application/json" };
@@ -30,7 +31,7 @@ const api = (state) => (next) => async (action) => {
 	log("url", action.payload.url);
 	log("url", callParams);
 
-	fetch(url, { ...callParams })
+	fetch(serverUrl + "/" + url, { ...callParams })
 		.then((response) => response.json())
 		.then((response) => {
 			log("response", response);

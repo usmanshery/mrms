@@ -9,7 +9,7 @@ export const adminModuleNotifications = {
 
 // urls
 const caseLoadUrl = "admin/loadCases";
-const updateCaseUrl = "admin/updateCase";
+const updateCaseUrl = "$admin/updateCase";
 
 // -- pending cases for approval
 export const loadCasesAction = () =>

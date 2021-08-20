@@ -85,9 +85,6 @@ class UserForm extends Component {
 		if (ref === "userLevel") {
 			if (validation.isNull(value)) error = "User Level is Required";
 		}
-		if (ref === "userRole") {
-			if (validation.isNull(value)) error = "1 or More User Roles Must Be Selected";
-		}
 		if (ref === "sex") {
 			if (validation.isNull(value)) error = "This Field is Required";
 		}
@@ -116,7 +113,7 @@ class UserForm extends Component {
 			return;
 		}
 		// if missing any required values
-		let requiredFields = ["name", "username", "password", "sex", "userLevel", "userRole"];
+		let requiredFields = ["name", "username", "password", "sex", "userLevel"];
 		let flaggedKeys = Object.keys(
 			Object.filter(this.state.form, (key, value) => requiredFields.includes(key) && (value === undefined || value === null || value === ""))
 		);
@@ -139,23 +136,18 @@ class UserForm extends Component {
 		const profile = {
 			...this.state.form,
 		};
-		if (this.props.action === userModuleActions.regNew) this.props.registerUserProfile(profile);
-		else this.props.updateUserProfile(this.props.activeUserId, profile);
+		if (this.props.action === userModuleActions.regNew) {
+			console.log(profile);
+			this.props.registerUserProfile(profile);
+		} else {
+			this.props.updateUserProfile(this.props.activeUserId, profile);
+		}
 	}
 
 	clearForm() {
 		this.setState({
 			form: {
-				name: "",
-				fathername: "",
-				sex: "",
-				age: "",
-				phone: "",
-				rank: "",
-				armynumber: "",
-				unit: "",
-				address: "",
-				city: "",
+				...defaultUserFormValues
 			},
 		});
 	}
@@ -210,19 +202,6 @@ class UserForm extends Component {
 							variant="standard"
 						/>
 					</Col>
-					<Col className="col-2">
-						<FormControl error={this.state.errors.sex !== false} variant="standard" className="fullWidth">
-							<InputLabel>{this.labels.sex}</InputLabel>
-							<Select className="fullWidth" value={this.state.form.sex} onChange={(event) => this.setFormValue("sex", event.target.value)} required>
-								<MenuItem value="">
-									<em>None</em>
-								</MenuItem>
-								<MenuItem value={"Male"}>Male</MenuItem>
-								<MenuItem value={"Female"}>Female</MenuItem>
-							</Select>
-							<FormHelperText>{this.state.errors.sex}</FormHelperText>
-						</FormControl>
-					</Col>
 					<Col className="col-3">
 						<TextField
 							className={"fullWidth"}
@@ -248,6 +227,19 @@ class UserForm extends Component {
 							type="password"
 						/>
 					</Col>
+					<Col className="col-2">
+						<FormControl error={this.state.errors.sex !== false} variant="standard" className="fullWidth">
+							<InputLabel>{this.labels.sex}</InputLabel>
+							<Select className="fullWidth" value={this.state.form.sex} onChange={(event) => this.setFormValue("sex", event.target.value)} required>
+								<MenuItem value="">
+									<em>None</em>
+								</MenuItem>
+								<MenuItem value={"Male"}>Male</MenuItem>
+								<MenuItem value={"Female"}>Female</MenuItem>
+							</Select>
+							<FormHelperText>{this.state.errors.sex}</FormHelperText>
+						</FormControl>
+					</Col>
 				</Row>
 				{/* User Level, User Roles */}
 				<Row>
@@ -262,20 +254,6 @@ class UserForm extends Component {
 								)}
 							/>
 							<FormHelperText>{this.state.errors.userLevel}</FormHelperText>
-						</FormControl>
-					</Col>
-					<Col className="col-4">
-						<FormControl error={this.state.errors.userRole !== false} variant="standard" fullWidth>
-							<Autocomplete
-								multiple
-								onChange={(event, value) => this.setFormValue("userRole", value)}
-								options={this.labels.userRoleOptions}
-								value={this.state.form.userRole}
-								renderInput={(params) => (
-									<TextField required error={this.state.errors.userRole ? true : false} {...params} label={this.labels.userRole} variant="standard" />
-								)}
-							/>
-							<FormHelperText>{this.state.errors.userRole}</FormHelperText>
 						</FormControl>
 					</Col>
 				</Row>

@@ -19,6 +19,19 @@ const mapStateToProps = (state, props) => {
 		};
 	}
 
+	if (state.activeModule === navModules.admin) {
+		console.log(state.adminModule);
+		return {
+			readOnly,
+			formValues: state.adminModule.activeCase.ULO2,
+		};
+	}
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		return {
+			readOnly,
+			formValues: state.stationModule.activeCase.ULO2,
+		};
+	}
 	return {
 		activePatientCaseId: state.patientModule.activePatientCaseId,
 		activePatientData: state.patientModule.activePatientData,

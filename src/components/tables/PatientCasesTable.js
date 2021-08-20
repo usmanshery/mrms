@@ -18,37 +18,62 @@ import Paper from "@material-ui/core/Paper";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Switch from "@material-ui/core/Switch";
 
-import { editCaseAction } from "../../store/actions/Patient";
+import { editCaseAction, patientModuleSearchTypes, caseSearchProfileLoadAction, patientValueBackupAction } from "../../store/actions/Patient";
 import { caseStageFinderAuto } from "../../store/misc/global"; //accordianWrapper
 
 import "../styles/Table.css";
 import { navModules } from "../../store/actions/Navigation";
 
-const mapStateToProps = (state) => {
-	if (state.activeModule === navModules.patientModule) {
-		return {
-			activePatientId: state.patientModule.activePatientId,
-			activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
-		};
+const mapStateToProps = (state, props) => {
+	// console.log(state);
+	if (state.activeModule === navModules.patient) {
+		if (props.searchOnly) {
+			if (state.patientModule.searchType === patientModuleSearchTypes.case) {
+				// console.log(state.patientModule.searchResults);
+				let cases = [];
+				Object.keys(state.patientModule.searchResults).forEach((caseCategory) => {
+					cases = cases.concat(
+						state.patientModule.searchResults[caseCategory].map((_case) => {
+							return {
+								category: caseCategory,
+								[caseCategory]: { ..._case },
+							};
+						})
+					);
+				});
+
+				return {
+					cases,
+					mode: patientModuleSearchTypes.case,
+				};
+			}
+
+			return {
+				cases: [],
+			};
+		}
+
+		// regular stuff
+		if (state.patientModule.activePatientId !== undefined && state.patientModule.activePatientData !== undefined) {
+			return {
+				cases: state.patientModule.activePatientData ? state.patientModule.activePatientData.cases : [],
+				mode: patientModuleSearchTypes.patient,
+			};
+		}
 	}
-	// if (state.activeModule === navModules.admin) {
-	// 	return {
-	// 		activePatientId: state.patientModule.activePatientId,
-	// 		activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
-	// 	};
-		
-	// }
 
 	// remove it
 	return {
-		activePatientId: state.patientModule.activePatientId,
-		activePatientData: state.patientModule.activePatientData ? state.patientModule.activePatientData : {},
+		// activePatientId: state.patientModule.activePatientId,
+		cases: [],
 	};
 };
 
 const mapDispatchToProps = (dispatch) => {
 	return {
 		editCase: (caseId) => dispatch(editCaseAction(caseId)),
+		loadProfile: (patientId) => dispatch(caseSearchProfileLoadAction(patientId)),
+		backupCaseId: (caseId) => dispatch(patientValueBackupAction({ activeCaseId: caseId })),
 	};
 };
 
@@ -63,6 +88,7 @@ class PatientCasesTable extends Component {
 			{ id: "action", align: "center", disablePadding: false, label: "Actions" },
 		];
 
+		this.loadValues = this.loadValues.bind(this);
 		this.stableSort = this.stableSort.bind(this);
 		this.getComparator = this.getComparator.bind(this);
 		this.handleClick = this.handleClick.bind(this);
@@ -71,23 +97,9 @@ class PatientCasesTable extends Component {
 		this.handleChangePage = this.handleChangePage.bind(this);
 		this.handleChangeRowsPerPage = this.handleChangeRowsPerPage.bind(this);
 		this.descendingComparator = this.descendingComparator.bind(this);
-		this.viewPatient = this.viewPatient.bind(this);
 		this.editCase = this.editCase.bind(this);
 
-		let dataRows = [];
-
-		if (this.props.activePatientData.cases.length > 0) {
-			// on new results:
-			dataRows = this.props.activePatientData.cases.map((_case) => {
-				let { category } = _case;
-				return {
-					id: _case[category]._id,
-					status: caseStageFinderAuto(_case, category), // _case[category].casting ? (_case[category].modification ? "Finished" : "Pending Modification") : "Pending Casting",
-					category,
-				};
-			});
-		}
-
+		let dataRows = this.loadValues();
 		this.state = {
 			headCells,
 			order: "asc",
@@ -102,24 +114,31 @@ class PatientCasesTable extends Component {
 
 	componentDidUpdate(prevState) {
 		// make it componentDidReceiveProps like
-		if (prevState.activePatientData.cases.length === this.props.activePatientData.cases.length) return;
+		if (prevState.cases.length === this.props.cases.length) return;
 
+		let dataRows = this.loadValues();
+		this.setState({
+			dataRows,
+		});
+	}
+
+	loadValues() {
 		let dataRows = [];
 
-		if (this.props.activePatientData.cases.length > 0) {
+		if (this.props.cases.length > 0) {
 			// on new results:
-			dataRows = this.props.activePatientData.cases.map((_case) => {
+			dataRows = this.props.cases.map((_case) => {
 				let { category } = _case;
+
 				return {
 					id: _case[category]._id,
 					status: caseStageFinderAuto(_case, category),
 					category,
+					profileId: _case[category].profile,
 				};
 			});
 		}
-		this.setState({
-			dataRows,
-		});
+		return dataRows;
 	}
 
 	// table helper functions
@@ -182,11 +201,13 @@ class PatientCasesTable extends Component {
 	}
 
 	editCase(data) {
-		this.props.editCase(data.id);
-	}
-
-	viewPatient(data) {
-		this.props.viewPatient(data.id, data);
+		if (this.props.mode === patientModuleSearchTypes.patient) {
+			this.props.editCase(data.id);
+		}
+		if (this.props.mode === patientModuleSearchTypes.case) {
+			this.props.backupCaseId(data.id);
+			this.props.loadProfile(data.profileId);
+		}
 	}
 
 	render() {

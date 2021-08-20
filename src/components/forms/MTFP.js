@@ -18,7 +18,19 @@ const mapStateToProps = (state, props) => {
 			formValues: state.patientModule.activeCase[state.patientModule.activeCase.category].TFP,
 		};
 	}
-
+	if (state.activeModule === navModules.admin) {
+		console.log(state.adminModule);
+		return {
+			readOnly,
+			formValues: state.adminModule.activeCase.TFP,
+		};
+	}
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		return {
+			readOnly,
+			formValues: state.stationModule.activeCase.TFP,
+		};
+	}
 	return {
 		activePatientCaseId: state.patientModule.activePatientCaseId,
 		activePatientData: state.patientModule.activePatientData,
@@ -370,7 +382,7 @@ class TFPForm extends Component {
 					<Col className="col-3 checkboxSection">
 						<FormControlLabel
 							control={
-								<Checkbox checked={this.state.form.alignmentProblem} onClick={(event) => this.setFormValue("alignmentProblem", event.target.alignmentProblem)} />
+								<Checkbox checked={this.state.form.alignmentProblem} onClick={(event) => this.setFormValue("alignmentProblem", event.target.checked)} />
 							}
 							label={this.labels.alignmentProblem}
 						/>

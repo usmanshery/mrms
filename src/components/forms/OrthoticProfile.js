@@ -20,6 +20,7 @@ import CaseAttachmentsList from "./CaseAttachmentsList";
 import { navModules, toggleModal } from "../../store/actions/Navigation";
 import { stationCaseUpdatedAction } from "../../store/actions/Station";
 import { adminCaseUpdatedAction } from "../../store/actions/Admin";
+import CaseHistory from "../views/CaseHistoryView";
 
 const mapStateToProps = (state, props) => {
 	// refine behavioral props here
@@ -36,7 +37,7 @@ const mapStateToProps = (state, props) => {
 				isNew,
 				activePatientId: state.patientModule.activePatientId,
 				activeCaseId: state.patientModule.activeCaseId,
-				activeCase: state.patientModule.activeCase,
+				activeCase: state.patientModule.activeCase.orthotic,
 				// activePatientData: state.patientModule.activePatientData,	// enable this if needed
 			};
 		} else {
@@ -48,6 +49,20 @@ const mapStateToProps = (state, props) => {
 				activePatientId: state.patientModule.activePatientId,
 			};
 		}
+	}
+
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		let readOnly = state.activeModule === navModules.casting ? false : true;
+		return {
+			// station related
+			readOnly,
+			station: state.activeModule.toLowerCase(),
+			openCases: state.stationModule.openCases,
+			staff: state.stationModule.staff ? state.stationModule.staff.map((staff) => staff.username) : [],
+			activeCaseId: state.stationModule.activeCaseId,
+			activeCaseCategory: state.stationModule.activeCaseCategory,
+			activeCase: state.stationModule.activeCase,
+		};
 	}
 
 	return {
@@ -114,20 +129,24 @@ class OrthoticForm extends Component {
 	// loads form and error values from DB or defaults
 	loadValues() {
 		// if active case exists, fetch its data
+
 		let activeCaseData;
+		console.log(this.props.activeCase);
+
+		// New
 		if (this.props.isNew) {
 			activeCaseData = { ...defaultOrthoticFormValues };
-		} else {
-			if (this.props.station) {
-				activeCaseData = this.props.openCases.orthotic.filter((_case) => _case._id === this.props.activeCaseId)[0];
-				activeCaseData = { ...defaultOrthoticFormValues, ...activeCaseData };
-			} else if (this.props.admin) {
-				activeCaseData = this.props.pendingCases.orthotic.filter((_case) => _case._id === this.props.activeAdminCaseId)[0];
-				activeCaseData = { ...defaultOrthoticFormValues, ...activeCaseData };
-			} else {
-				activeCaseData = { ...defaultOrthoticFormValues, ...this.props.activeCase.orthotic };
-			}
 		}
+
+		// Station
+		else if (this.props.station) {
+			activeCaseData = { ...defaultOrthoticFormValues, ...this.props.activeCase };
+		}
+		// Patient
+		else {
+			activeCaseData = { ...defaultOrthoticFormValues, ...this.props.activeCase };
+		}
+
 		return {
 			form: activeCaseData,
 			staffDetailsPopup: false,
@@ -137,7 +156,7 @@ class OrthoticForm extends Component {
 	}
 
 	setFormValue(ref, value, spread = false) {
-		if (this.readOnly) return;
+		if (this.props.readOnly && !this.state.staffDetailsPopup) return;
 
 		let error = false;
 		if (this.props.station) {
@@ -222,11 +241,9 @@ class OrthoticForm extends Component {
 		} else if (this.props.station) {
 			// dispatch update with case id and updated details
 			let formData = this.state.form;
-			this.props.updateStationCase(this.props.activeCaseId, formData, this.props.stationName);
-			this.togglePopups("staffDetailsPopup");
-		} else if (this.props.admin) {
-			// dispatch update with case id and updated details
-			// this.props.updateAdminCase(this.props.activeAdminCaseId, param);
+			this.props.updateStationCase(this.props.activeCaseId, formData, this.props.station);
+			// toggle it off
+			this.togglePopups("staffDetailsPopup", false);
 		} else {
 			// dispatch update with case id and updated details
 			let formData = this.state.form;
@@ -249,38 +266,97 @@ class OrthoticForm extends Component {
 			 - Case Measurement Form (dependent)
 		*/
 	render() {
+		let historyComponent = undefined;
 		let measurementForm = undefined;
 		let attachmentComponent = undefined;
 		let triggerAction = undefined;
+
+		// user data popup
+		const userCredentialsPopup = (
+			<Modal show={this.state.staffDetailsPopup} onHide={() => this.togglePopups("staffDetailsPopup")}>
+				<Modal.Header closeButton>
+					<Modal.Title>Enter Your Credentials</Modal.Title>
+				</Modal.Header>
+				<Modal.Body>
+					<FormControl error={this.state.errors.staffUsername !== false} variant="standard" fullWidth>
+						<Autocomplete
+							onChange={(event, value) => this.setFormValue("staffUsername", value)}
+							options={this.props.staff}
+							value={this.state.form.staffUsername}
+							renderInput={(params) => <TextField {...params} label={this.labels.staffUsername} variant="standard" />}
+						/>
+						<FormHelperText>{this.state.errors.staffUsername}</FormHelperText>
+					</FormControl>
+					<FormControl error={this.state.errors.staffPassword !== false} variant="standard" fullWidth>
+						<TextField
+							margin="none"
+							type="password"
+							label={this.labels.staffPassword}
+							value={this.state.form.staffPassword}
+							onChange={(event) => this.setFormValue("staffPassword", event.target.value)}
+							variant="standard"
+						/>
+						<FormHelperText>{this.state.errors.staffPassword}</FormHelperText>
+					</FormControl>
+					<div>
+						{/* style={{ float: "right", padding: "10px 20px 10px 20px" }} */}
+						<Button variant="contained" color="primary" style={{ float: "right" }} onClick={this.triggerAction}>
+							{"Send"}
+						</Button>
+					</div>
+				</Modal.Body>
+			</Modal>
+		);
 
 		// add measurement form
 		if (!this.props.isNew) {
 			const formType = this.state.form.applianceType;
 			if (formType === "AFO") {
-				measurementForm = rowWrapper(<AFOForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<AFOForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "KAFO") {
-				measurementForm = rowWrapper(<KAFOForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<KAFOForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "LLOR") {
-				measurementForm = rowWrapper(<LLORForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<LLORForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "LLPR") {
-				measurementForm = rowWrapper(<LLPRForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<LLPRForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "ULO") {
-				measurementForm = rowWrapper(<ULOForm setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<ULOForm setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 			if (formType === "ULO2") {
-				measurementForm = rowWrapper(<ULO2Form setFormValue={this.setFormValue} readOnly={this.readOnly} />, true);
+				measurementForm = rowWrapper(<ULO2Form setFormValue={this.setFormValue} readOnly={this.props.readOnly} />, true);
 			}
 
 			// finish here if only measurement form is to be displayed
-			if (this.measurementOnly) {
-				return <Container>{measurementForm}</Container>;
+			if (this.props.station) {
+				// trigger action
+				triggerAction = (
+					<Container>
+						<Row>
+							<Col className="col-3 offset-9">
+								<div className="form-submit-button">
+									<Button variant="contained" color="primary" onClick={() => this.togglePopups("staffDetailsPopup")}>
+										{"Finish"}
+									</Button>
+								</div>
+							</Col>
+						</Row>
+					</Container>
+				);
+				return (
+					<Container>
+						{measurementForm}
+						{triggerAction}
+						{userCredentialsPopup}
+					</Container>
+				);
 			}
 
-			attachmentComponent = rowWrapper(<CaseAttachmentsList readOnly={this.readOnly} />, true);
+			historyComponent = rowWrapper(<CaseHistory caseCategory="orthotic" caseDetail={this.props.activeCase} />, true);
+			attachmentComponent = rowWrapper(<CaseAttachmentsList readOnly={this.props.readOnly} />, true);
 		}
 
 		let caseFields = rowWrapper(
@@ -434,46 +510,10 @@ class OrthoticForm extends Component {
 			</Container>
 		);
 
-		// user data popup
-		const userCredentialsPopup = (
-			<Modal show={this.state.staffDetailsPopup} onHide={() => this.togglePopups("staffDetailsPopup")}>
-				<Modal.Header closeButton>
-					<Modal.Title>Enter Your Credentials</Modal.Title>
-				</Modal.Header>
-				<Modal.Body>
-					<FormControl error={this.state.errors.staffUsername !== false} variant="standard" fullWidth>
-						<Autocomplete
-							onChange={(event, value) => this.setFormValue("staffUsername", value)}
-							options={this.props.staff}
-							value={this.state.form.staffUsername}
-							renderInput={(params) => <TextField {...params} label={this.labels.staffUsername} variant="standard" />}
-						/>
-						<FormHelperText>{this.state.errors.staffUsername}</FormHelperText>
-					</FormControl>
-					<FormControl error={this.state.errors.staffPassword !== false} variant="standard" fullWidth>
-						<TextField
-							margin="none"
-							type="password"
-							label={this.labels.staffPassword}
-							value={this.state.form.staffPassword}
-							onChange={(event) => this.setFormValue("staffPassword", event.target.value)}
-							variant="standard"
-						/>
-						<FormHelperText>{this.state.errors.staffPassword}</FormHelperText>
-					</FormControl>
-					<div>
-						{/* style={{ float: "right", padding: "10px 20px 10px 20px" }} */}
-						<Button variant="contained" color="primary" style={{ float: "right" }} onClick={this.triggerAction}>
-							{"Send"}
-						</Button>
-					</div>
-				</Modal.Body>
-			</Modal>
-		);
-
 		// return accordian with container rows for individual sub-components
 		let content = (
 			<Container>
+				{historyComponent}
 				{attachmentComponent}
 				{caseFields}
 				{measurementForm}

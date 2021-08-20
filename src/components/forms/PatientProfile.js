@@ -120,11 +120,11 @@ class PatientForm extends Component {
 		if (ref === "city") {
 			if (validation.isNull(value)) error = "This Field is Required";
 		}
-		// if(ref === "category"){
-		// 	if(value === "Dependent"){
-
-		// 	}
-		// }
+		if(ref === "category"){
+			if(value === ""){
+				value = null;
+			}
+		}
 		if (ref === "picture") {
 			// value = Buffer.from(value.split(",")[1], "base64")
 			// console.log(value.split(",")[0].split(";")[0].substr(11))
@@ -152,7 +152,10 @@ class PatientForm extends Component {
 		}
 		// if missing any required values
 		let requiredFields = ["name", "fathername", "contact", "sex", "age", "phone", "address", "city", "category"];
-		if (this.state.form.category === "Dependent") requiredFields.push("dependent");
+		if (this.state.form.category === "Entitled" || this.state.form.category === "War Wounded") requiredFields.push("rank", "unit", "armynumber");
+		if (this.state.form.category === "Dependent") requiredFields.push("dependent", "rank", "unit", "armynumber");
+		if (this.state.form.category === "Civil Entitled") requiredFields.push("department");
+		console.log(requiredFields);
 		let flaggedKeys = Object.keys(
 			Object.filter(this.state.form, (key, value) => requiredFields.includes(key) && (value === undefined || value === null || value === ""))
 		);
@@ -344,6 +347,52 @@ class PatientForm extends Component {
 								</Col>
 							</Row>
 							{/* Optional field: Dependents */}
+							{/* Rank, Armynumber, Unit */}
+							{this.state.form.category === "Entitled" || this.state.form.category === "War Wounded" || this.state.form.category === "Dependent" ? (
+								<Row>
+									{/* Rank */}
+									<Col className="col-3">
+										<FormControl error={this.state.errors.rank !== false} variant="standard" fullWidth>
+											<Autocomplete
+												options={this.labels.rankOptions}
+												value={this.state.form.rank}
+												renderInput={(params) => <TextField required error={this.state.errors.rank ? true : false} {...params} label={this.labels.rank} variant="standard" />}
+												onChange={(event, value) => this.setFormValue("rank", value)}
+											/>
+											<FormHelperText>{this.state.errors.rank}</FormHelperText>
+										</FormControl>
+									</Col>
+									{/* Armynumber */}
+									<Col className="col-3">
+											<TextField
+												margin="none"
+												label={this.labels.armynumber}
+												value={this.state.form.armynumber}
+												onChange={(event) => this.setFormValue("armynumber", event.target.value)}
+												variant="standard"
+												error={this.state.errors.armynumber !== false}
+												helperText={this.state.errors.armynumber}
+												required
+											/>
+									</Col>
+									{/* Unit */}
+									<Col className="col-3">
+										<FormControl error={this.state.errors.unit !== false} variant="standard" fullWidth>
+											<TextField
+												margin="none"
+												label={this.labels.unit}
+												value={this.state.form.unit}
+												onChange={(event) => this.setFormValue("unit", event.target.value)}
+												variant="standard"
+												error={this.state.errors.unit !== false}
+												helperText={this.state.errors.unit}
+												required
+											/>
+											<FormHelperText>{this.state.errors.unit}</FormHelperText>
+										</FormControl>
+									</Col>
+								</Row>
+							) : undefined}
 							{this.state.form.category === "Dependent" ? (
 								<Row>
 									<Col>
@@ -360,47 +409,23 @@ class PatientForm extends Component {
 									</Col>
 								</Row>
 							) : undefined}
-							{/* Rank, Armynumber, Unit */}
-							<Row>
-								{/* Rank */}
-								<Col className="col-3">
-									<FormControl error={this.state.errors.rank !== false} variant="standard" fullWidth>
-										<Autocomplete
-											options={this.labels.rankOptions}
-											value={this.state.form.rank}
-											renderInput={(params) => <TextField {...params} label={this.labels.rank} variant="standard" />}
-											onChange={(event, value) => this.setFormValue("rank", value)}
-										/>
-										<FormHelperText>{this.state.errors.rank}</FormHelperText>
-									</FormControl>
-								</Col>
-								{/* Armynumber */}
-								<Col className="col-3">
-									<FormControl error={this.state.errors.armynumber !== false} variant="standard" fullWidth>
+							{this.state.form.category === "Civil Entitled" ? (
+								<Row>
+									<Col>
 										<TextField
-											margin="none"
-											label={this.labels.armynumber}
-											value={this.state.form.armynumber}
-											onChange={(event) => this.setFormValue("armynumber", event.target.value)}
+											className={"fullWidth"}
+											label={this.labels.department}
+											value={this.state.form.department}
+											onChange={(event) => this.setFormValue("department", event.target.value)}
+											error={this.state.errors.department !== false}
+											helperText={this.state.errors.department}
+											required
 											variant="standard"
 										/>
-										<FormHelperText>{this.state.errors.armynumber}</FormHelperText>
-									</FormControl>
-								</Col>
-								{/* Unit */}
-								<Col className="col-3">
-									<FormControl error={this.state.errors.unit !== false} variant="standard" fullWidth>
-										<TextField
-											margin="none"
-											label={this.labels.unit}
-											value={this.state.form.unit}
-											onChange={(event) => this.setFormValue("unit", event.target.value)}
-											variant="standard"
-										/>
-										<FormHelperText>{this.state.errors.unit}</FormHelperText>
-									</FormControl>
-								</Col>
-							</Row>
+									</Col>
+								</Row>
+							) : undefined}
+							
 						</Container>
 					</Col>
 					<Col className="col-2">
@@ -421,7 +446,8 @@ class PatientForm extends Component {
 			</Container>
 		);
 
-		return accordianWrapper("Personal Details", content);
+		let title = this.props.action === patientModuleActions.regNew ? "Register New Patient" : "Personal Details";
+		return accordianWrapper(title, content);
 	}
 }
 

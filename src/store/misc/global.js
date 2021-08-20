@@ -101,7 +101,7 @@ export const rowWrapper = (content, hr = false) => (
 
 export const caseCategories = {
 	prosthetic: "prosthetic",
-	orthotic: "prthotic",
+	orthotic: "orthotic",
 	mechanical: "mechanical",
 };
 
@@ -126,7 +126,7 @@ export const prostheticCaseStageFinder = (_case) => {
 		_case.patientCategory === defaultProfileFormLabelValues.categoryOptions[1]
 	) {
 		if (!_case.admin) return caseStages.admin;
-		if (!_case.reception || !_case.reception.processed) return caseStages.reception;
+		if (!_case.reception) return caseStages.reception;
 	}
 	// CME or dependent
 	if (!_case.casting) return caseStages.casting;
@@ -158,3 +158,7 @@ export const caseStageFinderAuto = (_case, category) => {
 	if (category === caseCategories.orthotic) return orthoticCaseStageFinder(_case[category]);
 	if (category === caseCategories.mechanical) return mechanicalCaseStageFinder(_case[category]);
 };
+
+export const serverUrl = window.serverUrls[window.env];
+
+console.log(`Mode: ${window.env} | URL: ${serverUrl}`);

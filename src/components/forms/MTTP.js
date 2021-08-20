@@ -11,7 +11,6 @@ import { navModules } from "../../store/actions/Navigation";
 const mapStateToProps = (state, props) => {
 	// refine behavioral props here
 	let readOnly = props.readOnly === undefined ? false : props.readOnly;
-
 	if (state.activeModule === navModules.patient) {
 		return {
 			readOnly,
@@ -19,6 +18,18 @@ const mapStateToProps = (state, props) => {
 		};
 	}
 
+	if (state.activeModule === navModules.admin) {
+		return {
+			readOnly,
+			formValues: state.adminModule.activeCase.TTP,
+		};
+	}
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		return {
+			readOnly,
+			formValues: state.stationModule.activeCase.TTP,
+		};
+	}
 	return {
 		activePatientCaseId: state.patientModule.activePatientCaseId,
 		activePatientData: state.patientModule.activePatientData,

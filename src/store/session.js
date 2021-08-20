@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { adminModuleNotifications } from "./actions/Admin";
-import { patientModuleNotifications } from "./actions/Patient";
+import { patientModuleNotifications, patientModuleSearchTypes } from "./actions/Patient";
 import { stationModuleNotifications } from "./actions/Station";
 import { userModuleNotifications } from "./actions/User";
 import { navModules, adminPages, patientPages, userPages, stationPages } from "./actions/Navigation";
@@ -8,10 +8,10 @@ import { notificationType } from "./misc/global";
 
 const initialState = {
 	loading: false,
-	loggedIn: true, // false
-	loggedUserData: { name: "Usman Shery" },
+	loggedIn: false, // false
+	loggedUserData: {},
 	notifications: [],
-	activeModule: navModules.patient,
+	activeModule: navModules.casting,
 	loginModal: false,
 	uploadFileModal: false,
 	adminModule: {
@@ -26,6 +26,7 @@ const initialState = {
 		newPatientData: undefined,
 		// search results
 		searchResults: undefined,
+		searchType: undefined,
 		// under process patient profile
 		activePatientId: undefined,
 		activePatientData: undefined,
@@ -35,8 +36,6 @@ const initialState = {
 
 		activeCaseId: undefined,
 		activeCase: undefined,
-		// callbacks
-		callbackActions: [],
 	},
 	userModule: {
 		activePage: userPages.search,
@@ -44,14 +43,13 @@ const initialState = {
 		activeUserId: undefined,
 		activeUserData: undefined,
 		activeUserEditable: false,
-		callbackActions: [],
 	},
 	stationModule: {
 		activePage: stationPages.list,
 		openCases: undefined,
 		activeCaseId: undefined,
 		activeCaseCategory: undefined,
-		callbackActions: [],
+		activeCase: undefined,
 	},
 };
 
@@ -59,6 +57,106 @@ const slice = createSlice({
 	name: "session",
 	initialState,
 	reducers: {
+		onPageLoad: (state, action) => {
+			/*
+				when page loads, first of all we need to check if we are logged in or not
+			*/
+			// if not logged in
+			if (!action.payload.success) {
+				return {
+					...state,
+					loading: false,
+					loggedIn: false,
+					loggedUserData: {},
+				};
+			}
+
+			// if logged in
+			console.log(action.payload);
+			let { name, username, sex, userLevel } = action.payload.profile;
+			return {
+				...state,
+				loading: false,
+				loggedIn: true,
+				loggedUserData: {
+					name,
+					username,
+					sex,
+					userLevel,
+				},
+			};
+		},
+
+		// session related
+		onUserLogin: (state, action) => {
+			if (action.payload.success) {
+				let profile = action.payload.profile;
+				return {
+					...state,
+					loggedIn: true,
+					loginModal: false,
+					loggedUserData: {
+						...profile,
+					},
+					notifications: [
+						...state.notifications,
+						{
+							type: notificationType.green,
+							message: userModuleNotifications.loginSuccess,
+						},
+					],
+				};
+			} else {
+				let errorMessage = action.payload.error;
+
+				return {
+					...state,
+					loggedIn: false,
+					notifications: [
+						...state.notifications,
+						{
+							type: notificationType.red,
+							message: errorMessage,
+						},
+					],
+				};
+			}
+		},
+
+		onUserLogout: (state, action) => {
+			if (action.payload.success) {
+				return {
+					...state,
+					loggedIn: false,
+					loggedUserData: {},
+					activeModule: navModules.casting,
+					notifications: [
+						...state.notifications,
+						{
+							type: notificationType.green,
+							message: userModuleNotifications.loginSuccess,
+						},
+					],
+				};
+			} else {
+				let errorMessage = action.payload.error;
+
+				return {
+					...state,
+					loggedIn: false,
+					loggedUserData: {},
+					activeModule: navModules.casting,
+					notifications: [
+						...state.notifications,
+						{
+							type: notificationType.red,
+							message: errorMessage,
+						},
+					],
+				};
+			}
+		},
+
 		onModuleSelect: (state, action) => {
 			let selectedModule = action.payload.module;
 			if (selectedModule === navModules.casting || selectedModule === navModules.modification || selectedModule === navModules.fitting) {
@@ -70,7 +168,29 @@ const slice = createSlice({
 						openCases: undefined,
 						activeCaseId: undefined,
 						activeCaseCategory: undefined,
-						callbackActions: [],
+					},
+				};
+			}
+			if (selectedModule === navModules.patient) {
+				return {
+					...state,
+					activeModule: selectedModule,
+					patientModule: {
+						activePage: patientPages.search,
+						// new patient data being added
+						newPatientData: undefined,
+						// search results
+						searchResults: undefined,
+						searchType: undefined,
+						// under process patient profile
+						activePatientId: undefined,
+						activePatientData: undefined,
+						activePatientEditable: false,
+
+						newCase: undefined,
+
+						activeCaseId: undefined,
+						activeCase: undefined,
 					},
 				};
 			}
@@ -111,7 +231,6 @@ const slice = createSlice({
 		},
 
 		onAdminCaseLoad: (state, action) => {
-			console.log(action.payload);
 			if (action.payload.success) {
 				return {
 					...state,
@@ -128,15 +247,14 @@ const slice = createSlice({
 
 		onAdminCaseUpdated: (state, action) => {
 			if (action.payload.success) {
-				let { category, caseDoc } = action.payload;
+				let { caseDoc } = action.payload;
 				return {
 					...state,
 					adminModule: {
 						...state.adminModule,
 						activePage: adminPages.pendingCases,
 						pendingCases: {
-							...state.adminModule.pendingCases,
-							[category]: [...state.adminModule.pendingCases[category].filter((_case) => _case._id !== caseDoc._id)],
+							prosthetic: [...state.adminModule.pendingCases.prosthetic.filter((_case) => _case._id !== caseDoc._id)],
 						},
 						activeCaseId: undefined,
 						activeCase: undefined,
@@ -178,41 +296,6 @@ const slice = createSlice({
 		},
 
 		// user module specific
-		onUserLogin: (state, action) => {
-			if (action.payload.success) {
-				let profile = action.payload.profile;
-				return {
-					...state,
-					loggedIn: true,
-					loginModal: false,
-					loggedUserData: {
-						...profile,
-					},
-					notifications: [
-						...state.notifications,
-						{
-							type: notificationType.green,
-							message: userModuleNotifications.loginSuccess,
-						},
-					],
-				};
-			} else {
-				let errorMessage = action.payload.error;
-
-				return {
-					...state,
-					loggedIn: false,
-					notifications: [
-						...state.notifications,
-						{
-							type: notificationType.red,
-							message: errorMessage,
-						},
-					],
-				};
-			}
-		},
-
 		onUserPageSelect: (state, action) => {
 			let selectedPage = action.payload.page;
 			if (selectedPage === state.userModule.activePage) return state;
@@ -236,7 +319,7 @@ const slice = createSlice({
 			};
 		},
 
-		onUserRegister: (state, action) => {
+		onUserAdd: (state, action) => {
 			if (action.payload.success) {
 				let activeUserId = action.payload.profile._id;
 				let activeUserData = action.payload.profile;
@@ -244,7 +327,6 @@ const slice = createSlice({
 					...state,
 					userModule: {
 						...state.userModule,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.regSuccess],
 						activePage: userPages.update,
 						activeUserId,
 						activeUserData,
@@ -263,7 +345,6 @@ const slice = createSlice({
 					...state,
 					userModule: {
 						...state.userModule,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.regFailure],
 					},
 					notifications: [
 						...state.notifications,
@@ -284,7 +365,6 @@ const slice = createSlice({
 					...state,
 					userModule: {
 						...state.userModule,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.updateSuccess],
 						activePage: userPages.update,
 						activeUserId,
 						activeUserData,
@@ -303,7 +383,6 @@ const slice = createSlice({
 					...state,
 					userModule: {
 						...state.userModule,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.updateFailure],
 					},
 					notifications: [
 						...state.notifications,
@@ -323,7 +402,6 @@ const slice = createSlice({
 					userModule: {
 						...state.userModule,
 						searchResults: action.payload.profiles,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.searchSuccess],
 					},
 				};
 			} else {
@@ -331,7 +409,6 @@ const slice = createSlice({
 					...state,
 					userModule: {
 						...state.userModule,
-						callbackActions: [...state.userModule.callbackActions, userModuleNotifications.searchFailure],
 					},
 					notifications: [
 						...state.notifications,
@@ -375,13 +452,7 @@ const slice = createSlice({
 		},
 
 		onUserPopCallback: (state, action) => {
-			return {
-				...state,
-				userModule: {
-					...state.userModule,
-					callbackActions: state.userModule.callbackActions.filter((cbAction) => cbAction !== action.payload.callbackAction),
-				},
-			};
+			return state;
 		},
 
 		// patient module specific
@@ -416,7 +487,6 @@ const slice = createSlice({
 					...state,
 					patientModule: {
 						...state.patientModule,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.regSuccess],
 						activePage: patientPages.update,
 						activePatientId,
 						activePatientData,
@@ -438,7 +508,6 @@ const slice = createSlice({
 					...state,
 					patientModule: {
 						...state.patientModule,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.regFailure],
 					},
 					notifications: [
 						...state.notifications,
@@ -459,7 +528,6 @@ const slice = createSlice({
 					...state,
 					patientModule: {
 						...state.patientModule,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.regSuccess],
 						activePage: patientPages.update,
 						activePatientId,
 						activePatientData: {
@@ -481,7 +549,6 @@ const slice = createSlice({
 					...state,
 					patientModule: {
 						...state.patientModule,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.regFailure],
 					},
 					notifications: [
 						...state.notifications,
@@ -502,16 +569,12 @@ const slice = createSlice({
 					patientModule: {
 						...state.patientModule,
 						searchResults: action.payload.profiles,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.searchSuccess],
+						searchType: patientModuleSearchTypes.patient,
 					},
 				};
 			} else {
 				return {
 					...state,
-					patientModule: {
-						...state.patientModule,
-						callbackActions: [...state.patientModule.callbackActions, patientModuleNotifications.searchFailure],
-					},
 					notifications: [
 						...state.notifications,
 						{
@@ -612,6 +675,7 @@ const slice = createSlice({
 		},
 
 		onCaseUpdated: (state, action) => {
+			if (state.activeModule === navModules.admin) return state;
 			if (action.payload.success) {
 				let { category, caseDoc } = action.payload;
 				return {
@@ -657,6 +721,31 @@ const slice = createSlice({
 			}
 		},
 
+		onCaseSearch: (state, action) => {
+			// console.log("on case search: ", action.payload);
+			if (action.payload.success) {
+				return {
+					...state,
+					patientModule: {
+						...state.patientModule,
+						searchResults: action.payload.cases,
+						searchType: patientModuleSearchTypes.case,
+					},
+				};
+			} else {
+				return {
+					...state,
+					notifications: [
+						...state.notifications,
+						{
+							type: notificationType.red,
+							message: action.payload.error,
+						},
+					],
+				};
+			}
+		},
+
 		onCaseEdit: (state, action) => {
 			let caseId = action.payload.caseId;
 
@@ -681,6 +770,27 @@ const slice = createSlice({
 					newCase,
 					activeCaseId: undefined,
 					activeCase: undefined,
+				},
+			};
+		},
+
+		onCaseSearchProfileLoad: (state, action) => {
+			// console.log("session: ", action.payload);
+			// return state;
+			let activePatientId = action.payload.profiles[0]._id;
+			let activePatientData = action.payload.profiles[0];
+			return {
+				...state,
+				patientModule: {
+					...state.patientModule,
+					activePage: patientPages.update,
+					activePatientId,
+					activePatientData,
+					newCase: undefined,
+					activeCaseId: state.patientModule.backup.activeCaseId,
+					activeCase: {
+						...activePatientData.cases.filter((_case) => _case[_case.category]._id === state.patientModule.backup.activeCaseId)[0],
+					},
 				},
 			};
 		},
@@ -934,6 +1044,19 @@ const slice = createSlice({
 			}
 		},
 
+		onPatientValueBackup: (state, action) => {
+			return {
+				...state,
+				patientModule: {
+					...state.patientModule,
+					backup: {
+						...state.patientModule.backup,
+						...action.payload,
+					},
+				},
+			};
+		},
+
 		// station module specific
 		onStationPageSelect: (state, action) => {
 			let selectedPage = action.payload.page;
@@ -987,12 +1110,13 @@ const slice = createSlice({
 					stationModule: {
 						...state.stationModule,
 						activePage: stationPages.list,
-						activeCaseId: undefined,
-						activeCaseCategory: undefined,
 						openCases: {
 							...state.stationModule.openCases,
 							[category]: [...state.stationModule.openCases[category].filter((_case) => _case._id !== caseDoc._id)],
 						},
+						activeCaseId: undefined,
+						activeCaseCategory: undefined,
+						activeCase: undefined,
 					},
 					notifications: [
 						...state.notifications,
@@ -1030,6 +1154,7 @@ const slice = createSlice({
 					activePage: stationPages.activeCase,
 					activeCaseId: caseId,
 					activeCaseCategory,
+					activeCase: state.stationModule.openCases[activeCaseCategory].filter((_case) => _case._id === caseId)[0],
 				},
 			};
 		},
@@ -1040,7 +1165,6 @@ const slice = createSlice({
 				...state,
 				patientModule: {
 					...state.patientModule,
-					callbackActions: state.patientModule.callbackActions.filter((cbAction) => cbAction !== action.payload.callbackAction),
 				},
 			};
 		},
@@ -1075,7 +1199,7 @@ const slice = createSlice({
 export const { onFailure } = slice.actions;
 export const { onNotificationPop } = slice.actions;
 export const { onModuleSelect, onAdminPageSelect, onPatientPageSelect, onUserPageSelect, onStationPageSelect, onToggleModal } = slice.actions;
-export const { onUserLogin, onUserRegister, onUserUpdate, onUserSearch, onUserView, onUserEdit, onUserPopCallback } = slice.actions;
+export const { onPageLoad, onUserLogin, onUserLogout, onUserAdd, onUserUpdate, onUserSearch, onUserView, onUserEdit, onUserPopCallback } = slice.actions;
 export const { onStationCaseLoad, onStationCaseEdit, onStationCaseUpdated, onStationStaffLoad } = slice.actions;
 export const { onAdminCaseLoad, onAdminCaseEdit, onAdminCaseUpdated } = slice.actions;
 export const {
@@ -1090,10 +1214,10 @@ export const {
 	onCaseNew,
 	onCaseAdded,
 	onCaseUpdated,
+	onCaseSearch,
+	onCaseSearchProfileLoad,
 	onFileDeleted,
 	onFileUploaded,
+	onPatientValueBackup,
 } = slice.actions;
 export default slice.reducer;
-
-// temporary: move to notification handler
-// Dispatchable actions

@@ -15,7 +15,6 @@ import { rowWrapper } from "../store/misc/global";
 import PatientCaseDetailForm from "./forms/PatientCaseDetail";
 
 const mapStateToProps = (state) => {
-	console.log(state.adminModule)
 	return {
 		activePage: state.adminModule.activePage,
 		pendingCases: state.adminModule.pendingCases,
@@ -65,30 +64,6 @@ class AdminComponent extends Component {
 				{rowWrapper(<PatientCaseDetailForm />)}
 			</>
 		);
-
-		// return (
-		// 	<Accordion expanded>
-		// 		<AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel1a-content" id="panel1a-header">
-		// 			<Typography>{"Prosthetic Case [" + this.props.activeCaseId + "]"}</Typography>
-		// 		</AccordionSummary>
-		// 		<AccordionDetails className="formTopline">
-		// 			<Container fluid>
-		// 				<Row>
-		// 					<PatientForm
-		// 						title={"Personal Details"}
-		// 						action={patientModuleActions.viewOnly}
-		// 						// action={patientModuleActions.updateExisting}
-		// 					/>
-		// 				</Row>
-		// 				{/* user details */}
-		// 				<Row>
-		// 					{" "}
-		// 					<ProstheticForm admin />
-		// 				</Row>
-		// 			</Container>
-		// 		</AccordionDetails>
-		// 	</Accordion>
-		// );
 	}
 
 	// render

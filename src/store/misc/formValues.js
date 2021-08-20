@@ -1195,27 +1195,23 @@ export const defaultUserFormValues = {
 	sex: "",
 
 	userLevel: null,
-	userRole: [],
 };
 
 export const defaultUserFormErrors = {
+	name: false,
 	username: false,
 	password: false,
-	name: false,
 	sex: false,
 	userLevel: false,
-	userRole: false,
 };
 
 export const defaultUserFormLabelValues = {
 	username: "Username",
 	password: "Password",
-	name: "Complete Name",
+	name: "Name",
 	sex: "Gender",
 	userLevel: "User Access Level",
-	userLevelOptions: ["Admin", "Sub-Admin", "Worker"],
-	userRole: "User Roles",
-	userRoleOptions: ["All"],
+	userLevelOptions: ["Admin", "Receptionist", "Worker"],
 };
 
 // Advise form
@@ -1261,6 +1257,7 @@ export const defaultProfileFormValues = {
 	picture: undefined,
 	category: null,
 	dependent: "",
+	department: "",
 };
 
 export const defaultProfileFormErrors = {
@@ -1277,6 +1274,7 @@ export const defaultProfileFormErrors = {
 	unit: false,
 	category: false,
 	dependent: false,
+	department: false,
 };
 
 export const defaultProfileFormLabelValues = {
@@ -1289,12 +1287,31 @@ export const defaultProfileFormLabelValues = {
 	city: "Select City",
 	cityOptions: cities,
 	rank: "Rank",
-	rankOptions: ["Lt", "Capt", "Maj", "Lt Col", "Col", "Brig", "Maj Gen", "Lt Gen", "Gen"],
+	rankOptions: [
+		"Gen or Equivalent",
+		"Lt Gen or Equivalent",
+		"Maj Gen or Equivalent",
+		"Brig or Equivalent",
+		"Col or Equivalent",
+		"Lt Col or Equivalent",
+		"Maj or Equivalent",
+		"Capt or Equivalent",
+		"Lt or Equivalent",
+		"Subedar Maj or Equivalent",
+		"Subedar or Equivalent",
+		"Naib Subaidar or Equivalent",
+		"Havildar Maj or Equivalent",
+		"Havildar or Equivalent",
+		"Naik or Equivalent",
+		"Lance Naik or Equivalent",
+		"Soldier or Equivalent",
+	],
 	armynumber: "Army Number",
 	unit: "Unit",
 	category: "Category",
-	categoryOptions: ["Entitled", "War Wounded", "CNE", "Dependent"],
+	categoryOptions: ["Entitled", "War Wounded", "Dependent", "CNE", "Civil Entitled" ],
 	dependent: "Dependent Relation",
+	department: "Concerned Department",
 };
 
 // Prosthetic form
@@ -1434,4 +1451,71 @@ export const defaultOrthoticFormLabelValues = {
 
 	staffUsername: "Select Username",
 	staffPassword: "Enter Password",
+};
+
+// Profile searh form ?
+export const defaultProfileSearchFormValues = {
+	name: "",
+	fathername: "",
+	sex: null,
+	age: "",
+	ageRange: "",
+	phone: "",
+	rank: null,
+	armynumber: "",
+	unit: "",
+	city: "",
+	category: null,
+};
+
+export const defaultProfileSearchFormErrors = {
+	age: false,
+	ageRange: false,
+};
+
+export const defaultProfileSearchFormLabelValues = {
+	name: "Patient Name",
+	fathername: "Father's Name",
+
+	sex: "Gender",
+	sexOptions: ["Male", "Female"],
+
+	phone: "Contact Number",
+	age: "Age",
+	ageRange: "Age Range (+-)",
+
+	rank: "Rank",
+	rankOptions: ["Lt", "Capt", "Maj", "Lt Col", "Col", "Brig", "Maj Gen", "Lt Gen", "Gen"],
+
+	armynumber: "Army Number",
+	unit: "Unit",
+
+	city: "City",
+	cityOptions: cities,
+
+	category: "Patient Category",
+	categoryOptions: ["Entitled", "War Wounded", "CNE", "Dependent"],
+};
+
+// Case search form
+export const defaultCaseSearchFormValues = {
+	caseId: "",
+	caseType: null,
+
+	startDate: undefined,
+	endDate: undefined,
+};
+
+export const defaultCaseSearchFormErrors = {
+	startDate: false,
+	endDate: false,
+};
+
+export const defaultCaseSearchFormLabelValues = {
+	caseId: "Case ID",
+	caseType: "Case Type",
+	caseTypeOptions: ["Prosthetic", "Orthotic", "Mechanical"],
+
+	startDate: "Search From Date",
+	endDate: "Search To Date",
 };

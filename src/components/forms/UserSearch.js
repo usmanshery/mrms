@@ -48,11 +48,8 @@ class UserSearchForm extends Component {
 			sex: "Gender",
 			sexOptions: ["Male", "Female"],
 
-			userLevel: "User Level",
-			userLevelOptions: ["Admin", "Sub-Admin", "Worker"],
-
-			userRole: "User Role",
-			userRoleOptions: ["All"],
+			userLevel: "User Access Level",
+			userLevelOptions: ["Admin", "Reception", "Worker"],
 		};
 	}
 
@@ -85,7 +82,6 @@ class UserSearchForm extends Component {
 				username: "",
 				sex: "",
 				userLevel: "",
-				userRole: "",
 			},
 		});
 	}
@@ -160,16 +156,6 @@ class UserSearchForm extends Component {
 											onChange={(event, value) => this.setFormValue("userLevel", value)}
 											options={this.labels.userLevelOptions}
 											renderInput={(params) => <TextField {...params} label={this.labels.userLevel} variant="standard" />}
-										/>
-									</FormControl>
-								</Col>
-								{/*  User Role */}
-								<Col className="col-4">
-									<FormControl variant="standard" fullWidth>
-										<Autocomplete
-											onChange={(event, value) => this.setFormValue("userRole", value)}
-											options={this.labels.userRoleOptions}
-											renderInput={(params) => <TextField {...params} label={this.labels.userRole} variant="standard" />}
 										/>
 									</FormControl>
 								</Col>

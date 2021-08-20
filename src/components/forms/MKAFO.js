@@ -18,7 +18,21 @@ const mapStateToProps = (state, props) => {
 			formValues: state.patientModule.activeCase[state.patientModule.activeCase.category].KAFO,
 		};
 	}
-	// if(state.activeModule === )
+
+	if (state.activeModule === navModules.admin) {
+		console.log(state.adminModule);
+		return {
+			readOnly,
+			formValues: state.adminModule.activeCase.KAFO,
+		};
+	}
+
+	if (state.activeModule === navModules.casting || state.activeModule === navModules.modification || state.activeModule === navModules.fitting) {
+		return {
+			readOnly,
+			formValues: state.stationModule.activeCase.KAFO,
+		};
+	}
 
 	return {
 		activePatientCaseId: state.patientModule.activePatientCaseId,
@@ -38,9 +52,9 @@ const mapDispatchToProps = (dispatch) => {
 class KAFOForm extends Component {
 	constructor(props) {
 		super(props);
-		
+
 		let activeCaseData = { ...defaultKAFOFormValues, ...this.props.formValues };
-		
+
 		// clean boolean values
 		for (var key in activeCaseData) {
 			if (activeCaseData.hasOwnProperty(key)) {
